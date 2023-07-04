@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -74,8 +76,12 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppLauncher(installedApps: List<ResolveInfo>) {
     val context = LocalContext.current
-    LazyColumn {
-        itemsIndexed(installedApps) { _, app ->
+    val columns = 4
+    val cells = GridCells.Fixed(columns)
+
+    LazyVerticalGrid(cells) {
+        items(installedApps.size) { index ->
+            val app = installedApps[index]
             AppItem(app, context.packageManager)
         }
     }
@@ -108,11 +114,11 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
 //    )
 //}
 
-@Composable
-fun AppIcon(appIcon: ImageBitmap) {
-    Image(
-        bitmap = appIcon,
-        contentDescription = null,
-        modifier = Modifier.size(48.dp)
-    )
-}
+//@Composable
+//fun AppIcon(appIcon: ImageBitmap) {
+//    Image(
+//        bitmap = appIcon,
+//        contentDescription = null,
+//        modifier = Modifier.size(48.dp)
+//    )
+//}
