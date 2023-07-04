@@ -3,18 +3,27 @@ package ru.ikar.ikar_launcher
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
 
 class MainActivity : ComponentActivity() {
 
@@ -33,8 +42,17 @@ class MainActivity : ComponentActivity() {
 
     //функция извлечения списка приложений
     private fun getInstalledApps(packageManager: PackageManager): List<ApplicationInfo> {
-        return packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
+        val apps = packageManager.getInstalledPackages(0)
+        val installedApps = mutableListOf<ApplicationInfo>()
+
+        for (app in apps) {
+            installedApps.add(app.applicationInfo)
+        }
+
+        return installedApps
+
     }
+
 //    private fun getInstalledApps(packageManager: PackageManager): List<ApplicationInfo> {
 //        val intent = Intent(Intent.ACTION_MAIN, null).apply {
 //            addCategory(Intent.CATEGORY_LAUNCHER)
@@ -66,8 +84,32 @@ fun AppLauncher(installedApps: List<ApplicationInfo>) {
 @Composable
 fun AppItem(app: ApplicationInfo, packageManager: PackageManager) {
     val appName = packageManager.getApplicationLabel(app).toString()
-    Text(text = appName,
-        modifier = Modifier
-            .padding(8.dp)
-            .fillMaxWidth())
+    val appIcon = packageManager.getApplicationIcon(app).toBitmap().asImageBitmap()
+
+    Column(modifier = Modifier.padding(8.dp)) {
+//        DefaultIcon()
+        AppIcon(appIcon)
+        Text(text = appName)
+    }
+}
+
+//@Composable
+//fun DefaultIcon() {
+//    val defaultIconId = android.R.drawable.sym_def_app_icon
+//    val defaultIcon = LocalContext.current.resources.getDrawable(defaultIconId, null).toBitmap()
+//        .asImageBitmap()
+//    Image(
+//        bitmap = defaultIcon,
+//        contentDescription = null,
+//        modifier = Modifier.size(48.dp)
+//    )
+//}
+
+@Composable
+fun AppIcon(appIcon: ImageBitmap) {
+    Image(
+        bitmap = appIcon,
+        contentDescription = null,
+        modifier = Modifier.size(48.dp)
+    )
 }
