@@ -3,7 +3,7 @@ package ru.ikar.ikar_launcher
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.graphics.drawable.Drawable
+import android.content.pm.ResolveInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,8 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -34,6 +32,7 @@ class MainActivity : ComponentActivity() {
         packageManager = applicationContext.packageManager
 
         val installedApps = getInstalledApps(packageManager)
+        val userInstalledApps = filterSystemApps(installedApps)
 
         setContent {
             AppLauncher(installedApps)
@@ -41,16 +40,17 @@ class MainActivity : ComponentActivity() {
     }
 
     //функция извлечения списка приложений
-    private fun getInstalledApps(packageManager: PackageManager): List<ApplicationInfo> {
-        val apps = packageManager.getInstalledPackages(0)
-        val installedApps = mutableListOf<ApplicationInfo>()
-
-        for (app in apps) {
-            installedApps.add(app.applicationInfo)
+    private fun getInstalledApps(packageManager: PackageManager): List<ResolveInfo> {
+        val intent = Intent(Intent.ACTION_MAIN, null).apply {
+            addCategory(Intent.CATEGORY_LAUNCHER)
         }
+        return packageManager.queryIntentActivities(intent, 0)
+    }
 
-        return installedApps
-
+    private fun filterSystemApps(apps: List<ResolveInfo>): List<ResolveInfo> {
+        return apps.filter { app ->
+            app.activityInfo.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM == 0
+        }
     }
 
 //    private fun getInstalledApps(packageManager: PackageManager): List<ApplicationInfo> {
@@ -72,7 +72,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppLauncher(installedApps: List<ApplicationInfo>) {
+fun AppLauncher(installedApps: List<ResolveInfo>) {
     val context = LocalContext.current
     LazyColumn {
         itemsIndexed(installedApps) { _, app ->
@@ -82,13 +82,16 @@ fun AppLauncher(installedApps: List<ApplicationInfo>) {
 }
 
 @Composable
-fun AppItem(app: ApplicationInfo, packageManager: PackageManager) {
-    val appName = packageManager.getApplicationLabel(app).toString()
-    val appIcon = packageManager.getApplicationIcon(app).toBitmap().asImageBitmap()
+fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
+    val appName = app.loadLabel(packageManager).toString()
+    val appIcon = app.loadIcon(packageManager).toBitmap().asImageBitmap()
 
     Column(modifier = Modifier.padding(8.dp)) {
-//        DefaultIcon()
-        AppIcon(appIcon)
+        Image(
+            bitmap = appIcon,
+            contentDescription = null,
+            modifier = Modifier.size(48.dp)
+        )
         Text(text = appName)
     }
 }
