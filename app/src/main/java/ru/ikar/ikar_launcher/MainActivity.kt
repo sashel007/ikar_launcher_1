@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 
@@ -88,7 +89,8 @@ fun AppLauncher(
             Column(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(bottom = 72.dp) // Adjust the value to create space above the button
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                    .padding(bottom = 72.dp)
             ) {
                 LazyVerticalGrid(cells) {
                     items(installedApps.size) { index ->
@@ -98,8 +100,6 @@ fun AppLauncher(
                 }
             }
         }
-
-
     }
 }
 
@@ -108,13 +108,16 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
     val appName = app.loadLabel(packageManager).toString()
     val appIcon = app.loadIcon(packageManager).toBitmap().asImageBitmap()
 
-    Column(modifier = Modifier.padding(8.dp)) {
+    Column(modifier = Modifier.padding(8.dp),
+           horizontalAlignment = Alignment.CenterHorizontally) {
         Image(
             bitmap = appIcon,
             contentDescription = null,
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(48.dp),
         )
-        Text(text = appName)
+        Text(text = appName,
+             textAlign = TextAlign.Center,
+             modifier = Modifier.fillMaxWidth())
     }
 }
 
