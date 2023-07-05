@@ -1,13 +1,14 @@
 package ru.ikar.ikar_launcher
 
+import android.content.Context
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.*
@@ -38,7 +39,6 @@ class MainActivity : ComponentActivity() {
         packageManager = applicationContext.packageManager
 
         val installedApps = getInstalledApps(packageManager)
-        val userInstalledApps = filterSystemApps(installedApps)
 
         setContent {
             AppLauncher(installedApps,showAllApps) {
@@ -54,13 +54,6 @@ class MainActivity : ComponentActivity() {
         }
         return packageManager.queryIntentActivities(intent, 0)
     }
-
-    //фильтр, выдающий только системные аппки
-    private fun filterSystemApps(apps: List<ResolveInfo>): List<ResolveInfo> {
-        return apps.filter { app ->
-            app.activityInfo.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM == 0
-        }
-    }
 }
 
 @Composable
@@ -72,7 +65,6 @@ fun AppLauncher(
     val context = LocalContext.current
     val columns = 4
     val cells = GridCells.Fixed(columns)
-    val modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp)
 
     Box(Modifier.fillMaxSize()) {
 
@@ -82,7 +74,7 @@ fun AppLauncher(
                 .align(Alignment.BottomCenter)
                 .padding(16.dp)
         ) {
-            Text(text = if (showAllApps) "Hide All Apps" else "Show All Apps")
+            Text(text = if (showAllApps) "Скрыть приложения" else "Открыть приложения")
         }
 
         if (showAllApps) {
@@ -105,6 +97,7 @@ fun AppLauncher(
 
 @Composable
 fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
+    val context = LocalContext.current
     val appName = app.loadLabel(packageManager).toString()
     val appIcon = app.loadIcon(packageManager).toBitmap().asImageBitmap()
 
@@ -113,12 +106,22 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
         Image(
             bitmap = appIcon,
             contentDescription = null,
-            modifier = Modifier.size(48.dp),
+            modifier = Modifier
+                .size(48.dp)
+                .clickable {
+                           launchApp(context,app)
+                },
         )
         Text(text = appName,
              textAlign = TextAlign.Center,
              modifier = Modifier.fillMaxWidth())
     }
+}
+
+private fun launchApp(context: Context, app: ResolveInfo) {
+    val packageName = app.activityInfo.packageName
+    val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
+    context.startActivity(launchIntent)
 }
 
 //@Composable
