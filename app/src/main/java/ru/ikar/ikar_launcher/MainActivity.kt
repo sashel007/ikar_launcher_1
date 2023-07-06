@@ -134,6 +134,7 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
     var isPopupVisible by remember { mutableStateOf(false) }
     var longPressInProgress by remember { mutableStateOf(false) }
 
+    //Икона приложения с названием под ним + диалоговое окно при зажатии на приложении
     Column(
         modifier = Modifier.padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
