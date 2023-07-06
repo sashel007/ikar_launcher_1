@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import android.content.pm.ApplicationInfo
+import androidx.compose.ui.window.Dialog
 
 
 class MainActivity : ComponentActivity() {
@@ -48,6 +49,8 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+
 
     //функция извлечения списка приложений
     @Suppress("DEPRECATION")
@@ -116,65 +119,76 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
     val appName = app.loadLabel(packageManager).toString()
     val appIcon = app.loadIcon(packageManager).toBitmap().asImageBitmap()
 
+    val popupWidth = 200.dp
+    val popupHeight = 100.dp
+
     var isPopupVisible by remember { mutableStateOf(false) }
-    val longPressInProgress = remember { mutableStateOf(false) }
+    var longPressInProgress by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier
-            .padding(8.dp)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onLongPress = { longPressInProgress.value = true },
-                    onPress = { longPressInProgress.value = false }
-                )
-            },
+        modifier = Modifier.padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ){
-        Image(
-            bitmap = appIcon,
-            contentDescription = null,
+        Box(
             modifier = Modifier
                 .size(48.dp)
-                .clickable {
-                    launchApp(context,app)
-                },
-        )
-        Text(text = appName,
-             textAlign = TextAlign.Center,
-             modifier = Modifier.fillMaxWidth())
-
-        if (isPopupVisible) {
-            Box(
-                modifier = Modifier
-                    .width(120.dp)
-                    .height(48.dp)
-                    .background(Color.Gray.copy(alpha = 0.5f))
-                    .border(1.dp, Color.Gray)
-            ) {
-                Button(
-                    onClick = {
-                        hideApp(context, app)
-                        // Dismiss the pop-up window
-                        isPopupVisible = false
-                    },
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(8.dp)
-                ) {
-                    Text(text = "Hide Application")
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { launchApp(context, app) },
+                        onLongPress = { isPopupVisible = true}
+                    )
                 }
+        ) {
+            Image(
+                bitmap = appIcon,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize()
+            )
+            if (isPopupVisible) {
+                Dialog(
+                    onDismissRequest = { isPopupVisible = false },
+                    content = {
+                        Column(
+                            modifier = Modifier
+                                .width(popupWidth)
+                                .height(popupHeight)
+                                .background(Color.White)
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Скрыть приложение?",
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { hideApp(context, app) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(text = "Да ")
+                            }
+                        }
+                    })
             }
+
         }
+        Text(
+            text = appName,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 4.dp)
+        )
     }
 }
 
-private fun launchApp(context: Context, app: ResolveInfo) {
+private const val LONG_PRESS_DURATION = 500L // 500 milliseconds
+
+fun launchApp(context: Context, app: ResolveInfo) {
     val packageName = app.activityInfo.packageName
     val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
     context.startActivity(launchIntent)
 }
 
-private fun hideApp(context: Context, app: ResolveInfo) {
+fun hideApp(context: Context, app: ResolveInfo) {
     val packageName = app.activityInfo.packageName
     val packageManager = context.packageManager
 
