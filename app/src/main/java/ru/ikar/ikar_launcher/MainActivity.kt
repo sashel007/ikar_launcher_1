@@ -13,8 +13,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -52,9 +50,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
-
-    //функция извлечения списка приложений
+    /*
+    функция извлечения списка пользовательских приложений; фильтрация от системных аппок
+    путём отсева приложений с флагом (FLAG_SYSTEM == 0)
+     */
     @Suppress("DEPRECATION")
     private fun getInstalledApps(packageManager: PackageManager): List<ResolveInfo> {
         val intent = Intent(Intent.ACTION_MAIN, null).apply {
@@ -65,6 +64,7 @@ class MainActivity : ComponentActivity() {
             PackageManager.MATCH_DEFAULT_ONLY
         )
 
+        //фильтруем только установленные аппки
         return resolveInfoList.filter { resolveInfo ->
             val flags = PackageManager.MATCH_UNINSTALLED_PACKAGES
             val appInfo = packageManager.getApplicationInfo(
@@ -76,6 +76,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+//стартовове вью с кнопкой и скрытым списком
 @Composable
 fun AppLauncher(
     installedApps: List<ResolveInfo>,
@@ -87,7 +88,7 @@ fun AppLauncher(
     val cells = GridCells.Fixed(columns)
 
     Box(Modifier.fillMaxSize()) {
-
+        //кнопка "Открыть приложения"
         Button(
             onClick = { onToggleAllApps() },
             modifier = Modifier
@@ -115,6 +116,7 @@ fun AppLauncher(
     }
 }
 
+//отрисовка приложений внутри списка приложений
 @Composable
 fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
     val context = LocalContext.current
@@ -123,6 +125,11 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
 
     val popupWidth = 200.dp
     val popupHeight = 100.dp
+
+    /*
+    запоминалка состояний при сворачивании списка через функцию
+    рекомпозиции mutableStateOf()
+     */
 
     var isPopupVisible by remember { mutableStateOf(false) }
     var longPressInProgress by remember { mutableStateOf(false) }
@@ -135,6 +142,11 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
             modifier = Modifier
                 .size(48.dp)
                 .pointerInput(Unit) {
+                    /*
+                    одно нажатие на аппку = открыть приложение;
+                    зажать палец на аппке = открыть диалоговое окно
+                    с предложением скрыть приложения из списка
+                     */
                     detectTapGestures(
                         onTap = { launchApp(context, app) },
                         onLongPress = { isPopupVisible = true}
@@ -182,14 +194,17 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
     }
 }
 
-private const val LONG_PRESS_DURATION = 500L // 500 milliseconds
-
+//функция открывания приложений внутри развернутого списка
 fun launchApp(context: Context, app: ResolveInfo) {
     val packageName = app.activityInfo.packageName
     val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
     context.startActivity(launchIntent)
 }
 
+/*
+ функция скрытия выбранного приложения из списка
+ ___(В ДОРАБОТКЕ, пока на уровне логов)
+ */
 fun hideApp(context: Context, app: ResolveInfo) {
     val packageName = app.activityInfo.packageName
     val packageManager = context.packageManager
