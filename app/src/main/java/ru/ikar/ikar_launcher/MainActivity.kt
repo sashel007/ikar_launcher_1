@@ -1,7 +1,6 @@
 package ru.ikar.ikar_launcher
 
-//
-
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -29,25 +28,34 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import android.content.pm.ApplicationInfo
+import android.util.Log
 import androidx.compose.ui.window.Dialog
-
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var packageManager: PackageManager
     private var showAllApps by mutableStateOf(false)
+    private var installedApps by mutableStateOf(emptyList<ResolveInfo>())
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         packageManager = applicationContext.packageManager
 
-        val installedApps = getInstalledApps(packageManager)
+        refreshInstalledApps() // Обновит список приложений, если пользователь перед этим скрыл
+                                // какие-то приложения руками, перед тем как зайти в setContent
+
 
         setContent {
-            AppLauncher(installedApps,showAllApps) {
-                showAllApps = !showAllApps
-            }
+            val context = LocalContext.current
+            AppLauncher(
+                installedApps = installedApps,
+                showAllApps = showAllApps,
+                onToggleAllApps = { showAllApps = !showAllApps },
+                hideApp = { app -> hideApp(context, app) }
+            )
         }
+
     }
 
     /*
@@ -74,6 +82,25 @@ class MainActivity : ComponentActivity() {
             appInfo.flags and ApplicationInfo.FLAG_SYSTEM == 0
         }
     }
+
+    //обновляет список приложений с учетом того, что пользователь мог скрыть какие-то из списка
+    fun refreshInstalledApps() {
+        installedApps = getInstalledApps(packageManager)
+    }
+
+    fun hideApp(context: Context, app: ResolveInfo) {
+        val packageName = app.activityInfo.packageName
+        val componentName = ComponentName(packageName, app.activityInfo.name)
+        packageManager.setComponentEnabledSetting(
+            componentName,
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            PackageManager.DONT_KILL_APP
+        )
+        Toast.makeText(context, "Приложение спрятано", Toast.LENGTH_SHORT).show()
+        Log.d("AppLauncher", "hideApp - Before refreshInstalledApps")
+        refreshInstalledApps()
+        Log.d("AppLauncher", "hideApp - After refreshInstalledApps")
+    }
 }
 
 //стартовове вью с кнопкой и скрытым списком
@@ -81,7 +108,8 @@ class MainActivity : ComponentActivity() {
 fun AppLauncher(
     installedApps: List<ResolveInfo>,
     showAllApps: Boolean,
-    onToggleAllApps: () -> Unit
+    onToggleAllApps: () -> Unit,
+    hideApp: (ResolveInfo) -> Unit
 ) {
     val context = LocalContext.current
     val columns = 4
@@ -108,7 +136,7 @@ fun AppLauncher(
                 LazyVerticalGrid(cells) {
                     items(installedApps.size) { index ->
                         val app = installedApps[index]
-                        AppItem(app, context.packageManager)
+                        AppItem(app, context.packageManager, hideApp)
                     }
                 }
             }
@@ -118,7 +146,7 @@ fun AppLauncher(
 
 //отрисовка приложений внутри списка приложений
 @Composable
-fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
+fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveInfo) -> Unit) {
     val context = LocalContext.current
     val appName = app.loadLabel(packageManager).toString()
     val appIcon = app.loadIcon(packageManager).toBitmap().asImageBitmap()
@@ -132,7 +160,6 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
      */
 
     var isPopupVisible by remember { mutableStateOf(false) }
-    var longPressInProgress by remember { mutableStateOf(false) }
 
     //Икона приложения с названием под ним + диалоговое окно при зажатии на приложении
     Column(
@@ -177,7 +204,9 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager) {
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
-                                onClick = { hideApp(context, app) },
+                                onClick = { hideApp(app)
+                                    isPopupVisible = false
+                                          },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(text = "Да ")
@@ -206,22 +235,7 @@ fun launchApp(context: Context, app: ResolveInfo) {
  функция скрытия выбранного приложения из списка
  ___(В ДОРАБОТКЕ, пока на уровне логов)
  */
-fun hideApp(context: Context, app: ResolveInfo) {
-    val packageName = app.activityInfo.packageName
-    val packageManager = context.packageManager
 
-    try {
-        packageManager.setApplicationEnabledSetting(
-            packageName,
-            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-            PackageManager.DONT_KILL_APP
-        )
-        Toast.makeText(context, "Приложение спрятано", Toast.LENGTH_SHORT).show()
-    } catch (e: Exception) {
-        Toast.makeText(context, "Спрятать не удалось", Toast.LENGTH_SHORT).show()
-        e.printStackTrace()
-    }
-}
 
 
 
