@@ -62,26 +62,38 @@ class MainActivity : ComponentActivity() {
     функция извлечения списка пользовательских приложений; фильтрация от системных аппок
     путём отсева приложений с флагом (FLAG_SYSTEM == 0)
      */
-    @Suppress("DEPRECATION")
-    private fun getInstalledApps(packageManager: PackageManager): List<ResolveInfo> {
-        val intent = Intent(Intent.ACTION_MAIN, null).apply {
-            addCategory(Intent.CATEGORY_LAUNCHER)
-        }
-        val resolveInfoList: List<ResolveInfo> = packageManager.queryIntentActivities(
-            intent,
-            PackageManager.MATCH_DEFAULT_ONLY
-        )
 
-        //фильтруем только установленные аппки
-        return resolveInfoList.filter { resolveInfo ->
-            val flags = PackageManager.MATCH_UNINSTALLED_PACKAGES
-            val appInfo = packageManager.getApplicationInfo(
-                resolveInfo.activityInfo.packageName,
-                flags
-            )
-            appInfo.flags and ApplicationInfo.FLAG_SYSTEM == 0
+    private fun getInstalledApps(packageManager: PackageManager): List<ResolveInfo> {
+        val intent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_LAUNCHER)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
         }
+        return packageManager.queryIntentActivities(intent, 0)
     }
+
+
+
+//    @Suppress("DEPRECATION")
+//    private fun getInstalledApps(packageManager: PackageManager): List<ResolveInfo> {
+//        val intent = Intent(Intent.ACTION_MAIN, null).apply {
+//            addCategory(Intent.CATEGORY_LAUNCHER)
+//        }
+//        val resolveInfoList: List<ResolveInfo> = packageManager.queryIntentActivities(
+//            intent,
+//            PackageManager.MATCH_DEFAULT_ONLY
+//        )
+//        return resolveInfoList
+//
+//        //фильтруем только установленные аппки
+////        return resolveInfoList.filter { resolveInfo ->
+////            val flags = PackageManager.MATCH_UNINSTALLED_PACKAGES
+////            val appInfo = packageManager.getApplicationInfo(
+////                resolveInfo.activityInfo.packageName,
+////                flags
+////            )
+////            appInfo.flags and ApplicationInfo.FLAG_SYSTEM == 0
+////        }
+//    }
 
     //обновляет список приложений с учетом того, что пользователь мог скрыть какие-то из списка
     fun refreshInstalledApps() {
