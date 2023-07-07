@@ -29,18 +29,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import android.util.Log
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
 
@@ -265,28 +260,6 @@ fun launchApp(context: Context, app: ResolveInfo) {
     context.startActivity(launchIntent)
 }
 
-@Composable
-fun AppDrawerButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    size: Dp = 48.dp,
-    icon: ImageVector
-) {
-    val rippleRadius = 10.dp
-    val ripple = rememberRipple(bounded = false, radius = rippleRadius)
-    val colorFilter = ColorFilter.tint(Color.Black)
-
-    Image(
-        imageVector = icon,
-        contentDescription = "App Drawer Icon",
-        modifier = modifier
-            .size(size)
-            .padding(8.dp)
-            .clickable(onClick = onClick)
-            .padding(4.dp),
-        colorFilter = colorFilter
-    )
-}
 
 /*
  функция скрытия выбранного приложения из списка
