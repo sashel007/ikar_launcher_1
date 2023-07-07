@@ -58,8 +58,7 @@ class MainActivity : ComponentActivity() {
 
 
         setContent {
-            Box(modifier = Modifier.fillMaxSize())
-            {
+            Box(modifier = Modifier.fillMaxSize()) {
                 Image(
                     painter = painterResource(R.drawable.img),
                     contentDescription = "Background Image",
@@ -75,7 +74,6 @@ class MainActivity : ComponentActivity() {
                     hideApp = { app -> hideApp(context, app) }
                 )
             }
-
         }
 
     }
@@ -149,7 +147,17 @@ fun AppLauncher(
     val columns = 4
     val cells = GridCells.Fixed(columns)
 
+    var isIconButtonClicked by remember { mutableStateOf(false) }
+
     Box(Modifier.fillMaxSize()) {
+
+        if (isIconButtonClicked) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Gray.copy(alpha = 0.5f))
+            )
+        }
         //кнопка "Открыть приложения"
         IconButton(
             onClick = { onToggleAllApps() },
@@ -158,7 +166,9 @@ fun AppLauncher(
                 .padding(16.dp)
                 .size(30.dp)
                 .clickable(
-                    onClick = onToggleAllApps,
+                    onClick = {onToggleAllApps
+                        isIconButtonClicked = !isIconButtonClicked
+                    },
                     interactionSource = remember { MutableInteractionSource() },
                     indication = rememberRipple(bounded = false, color = Color.Gray)
                 ),
@@ -181,7 +191,8 @@ fun AppLauncher(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(horizontal = 16.dp, vertical = 16.dp)
-                    .padding(bottom = 72.dp)
+                    .padding(bottom = 45.dp)
+                    .background(Color.Gray.copy(alpha = 0.3f))
             ) {
                 LazyVerticalGrid(cells) {
                     items(installedApps.size) { index ->
@@ -218,7 +229,7 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
     ){
         Box(
             modifier = Modifier
-                .size(48.dp)
+                .size(35.dp)
                 .pointerInput(Unit) {
                     /*
                     одно нажатие на аппку = открыть приложение;
@@ -269,6 +280,7 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
         Text(
             text = appName,
             textAlign = TextAlign.Center,
+            color = Color.White,
             modifier = Modifier.padding(top = 4.dp)
         )
     }
