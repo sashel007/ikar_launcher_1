@@ -35,6 +35,11 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.Dialog
 
 class MainActivity : ComponentActivity() {
@@ -53,13 +58,24 @@ class MainActivity : ComponentActivity() {
 
 
         setContent {
-            val context = LocalContext.current
-            AppLauncher(
-                installedApps = installedApps,
-                showAllApps = showAllApps,
-                onToggleAllApps = { showAllApps = !showAllApps },
-                hideApp = { app -> hideApp(context, app) }
-            )
+            Box(modifier = Modifier.fillMaxSize())
+            {
+                Image(
+                    painter = painterResource(R.drawable.img),
+                    contentDescription = "Background Image",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.FillBounds
+                )
+
+                val context = LocalContext.current
+                AppLauncher(
+                    installedApps = installedApps,
+                    showAllApps = showAllApps,
+                    onToggleAllApps = { showAllApps = !showAllApps },
+                    hideApp = { app -> hideApp(context, app) }
+                )
+            }
+
         }
 
     }
@@ -140,13 +156,18 @@ fun AppLauncher(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(16.dp)
-                .size(48.dp)
+                .size(30.dp)
                 .clickable(
                     onClick = onToggleAllApps,
                     interactionSource = remember { MutableInteractionSource() },
                     indication = rememberRipple(bounded = false, color = Color.Gray)
                 ),
-            enabled = true
+            enabled = true,
+            colors = IconButtonDefaults.filledIconButtonColors(
+                contentColor = Color.Magenta, // Change the icon color here
+                disabledContentColor = Color.Gray
+            )
+
         ) {
             Icon(
                 imageVector = Icons.Filled.Menu,
@@ -206,7 +227,7 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
                      */
                     detectTapGestures(
                         onTap = { launchApp(context, app) },
-                        onLongPress = { isPopupVisible = true}
+                        onLongPress = { isPopupVisible = true }
                     )
                 }
         ) {
@@ -259,6 +280,8 @@ fun launchApp(context: Context, app: ResolveInfo) {
     val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
     context.startActivity(launchIntent)
 }
+
+
 
 
 /*
