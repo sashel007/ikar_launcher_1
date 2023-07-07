@@ -236,7 +236,7 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
     }
 }
 
-//функция открывания приложений внутри развернутого списка
+//функция запуска приложений внутри развернутого списка
 fun launchApp(context: Context, app: ResolveInfo) {
     val packageName = app.activityInfo.packageName
     val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
