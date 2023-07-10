@@ -28,20 +28,26 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import android.util.Log
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import android.widget.CalendarView
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import kotlinx.coroutines.delay
+import ru.ikar.ikar_launcher.R
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -53,6 +59,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        //скрыл аппбар и навигейшн бар
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).let { controller ->
             controller.hide(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars())
@@ -61,7 +68,7 @@ class MainActivity : ComponentActivity() {
         packageManager = applicationContext.packageManager
 
         refreshInstalledApps() // Обновит список приложений, если пользователь перед этим скрыл
-                                // какие-то приложения руками, перед тем как зайти в setContent
+        // какие-то приложения руками, перед тем как зайти в setContent
 
 
         setContent {
@@ -72,8 +79,14 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.FillBounds
                 )
-
                 val context = LocalContext.current
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CalendarAndClock()
+                }
                 AppLauncher(
                     installedApps = installedApps,
                     showAllApps = showAllApps,
@@ -82,7 +95,6 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
-
     }
 
     /*
@@ -97,8 +109,6 @@ class MainActivity : ComponentActivity() {
         }
         return packageManager.queryIntentActivities(intent, 0)
     }
-
-
 
 //    @Suppress("DEPRECATION")
 //    private fun getInstalledApps(packageManager: PackageManager): List<ResolveInfo> {
@@ -123,7 +133,7 @@ class MainActivity : ComponentActivity() {
 //    }
 
     //обновляет список приложений с учетом того, что пользователь мог скрыть какие-то из списка
-    private fun refreshInstalledApps() {
+    fun refreshInstalledApps() {
         installedApps = getInstalledApps(packageManager)
     }
 
@@ -142,7 +152,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-//стартовове вью с кнопкой и скрытым списком/
+//стартовове вью с кнопкой и скрытым списком
 @Composable
 fun AppLauncher(
     installedApps: List<ResolveInfo>,
@@ -153,11 +163,12 @@ fun AppLauncher(
     val context = LocalContext.current
     val columns = 4
     val cells = GridCells.Fixed(columns)
+    val itemsPerRow = 4
+    val rows = if (installedApps.isNotEmpty()) installedApps.chunked(itemsPerRow) else emptyList()
 
     var isIconButtonClicked by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize()) {
-
         if (isIconButtonClicked) {
             Box(
                 modifier = Modifier
@@ -167,24 +178,20 @@ fun AppLauncher(
         }
         //кнопка "Открыть приложения"
         IconButton(
-            onClick = { onToggleAllApps() },
+            onClick = {
+                onToggleAllApps()
+                isIconButtonClicked = !isIconButtonClicked
+            },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(16.dp)
-                .size(30.dp)
-                .clickable(
-                    onClick = {
-                        onToggleAllApps
-                        isIconButtonClicked = !isIconButtonClicked
-                    },
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = rememberRipple(bounded = false, color = Color.Gray)
-                ),
+                .size(30.dp),
             enabled = true,
             colors = IconButtonDefaults.filledIconButtonColors(
                 contentColor = Color.Magenta, // Change the icon color here
                 disabledContentColor = Color.Gray
             )
+
         ) {
             Icon(
                 imageVector = Icons.Filled.Menu,
@@ -192,14 +199,14 @@ fun AppLauncher(
                 tint = Color.White
             )
         }
-
+        val columns = 4
+        val cells = GridCells.Fixed(columns)
         if (showAllApps) {
             Column(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(horizontal = 16.dp, vertical = 16.dp)
-                    .padding(bottom = 45.dp)
-                    .background(Color.Gray.copy(alpha = 0.3f))
+                    .padding(bottom = 72.dp)
             ) {
                 LazyVerticalGrid(cells) {
                     items(installedApps.size) { index ->
@@ -218,6 +225,7 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
     val context = LocalContext.current
     val appName = app.loadLabel(packageManager).toString()
     val appIcon = app.loadIcon(packageManager).toBitmap().asImageBitmap()
+
     val popupWidth = 200.dp
     val popupHeight = 100.dp
 
@@ -273,7 +281,7 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
                             Button(
                                 onClick = { hideApp(app)
                                     isPopupVisible = false
-                                          },
+                                },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(text = "Да ")
@@ -292,6 +300,56 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
     }
 }
 
+@Composable
+fun CalendarAndClock() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(modifier = Modifier.weight(1f)) {
+            CalendarWidget()
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Box(modifier = Modifier.weight(1f)) {
+            ClockWidget()
+        }
+    }
+}
+
+@Composable
+fun CalendarWidget() {
+    val context = LocalContext.current
+
+    AndroidView(
+        factory = { ctx ->
+            CalendarView(ctx).apply {
+                // Configure the calendar view as needed
+            }
+        },
+        modifier = Modifier.fillMaxWidth().height(300.dp)
+    )
+
+}
+
+@Composable
+fun ClockWidget() {
+    val currentTime = remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            currentTime.value = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+            delay(1000)
+        }
+    }
+
+    Text(
+        text = currentTime.value,
+        style = TextStyle(fontSize = 16.sp)
+    )
+}
+
 //функция запуска приложений внутри развернутого списка
 fun launchApp(context: Context, app: ResolveInfo) {
     val packageName = app.activityInfo.packageName
@@ -299,11 +357,8 @@ fun launchApp(context: Context, app: ResolveInfo) {
     context.startActivity(launchIntent)
 }
 
+
 /*
  функция скрытия выбранного приложения из списка
  ___(В ДОРАБОТКЕ, пока на уровне логов)
  */
-
-
-
-
