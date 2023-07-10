@@ -144,7 +144,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-//стартовове вью с кнопкой и скрытым списком
+//стартовове вью с кнопкой и скрытым списком/
 @Composable
 fun AppLauncher(
     installedApps: List<ResolveInfo>,
