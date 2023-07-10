@@ -36,9 +36,7 @@ import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.Dialog
 import androidx.core.view.WindowCompat
@@ -125,7 +123,7 @@ class MainActivity : ComponentActivity() {
 //    }
 
     //обновляет список приложений с учетом того, что пользователь мог скрыть какие-то из списка
-    fun refreshInstalledApps() {
+    private fun refreshInstalledApps() {
         installedApps = getInstalledApps(packageManager)
     }
 
@@ -175,7 +173,8 @@ fun AppLauncher(
                 .padding(16.dp)
                 .size(30.dp)
                 .clickable(
-                    onClick = {onToggleAllApps
+                    onClick = {
+                        onToggleAllApps
                         isIconButtonClicked = !isIconButtonClicked
                     },
                     interactionSource = remember { MutableInteractionSource() },
@@ -186,7 +185,6 @@ fun AppLauncher(
                 contentColor = Color.Magenta, // Change the icon color here
                 disabledContentColor = Color.Gray
             )
-
         ) {
             Icon(
                 imageVector = Icons.Filled.Menu,
@@ -220,7 +218,6 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
     val context = LocalContext.current
     val appName = app.loadLabel(packageManager).toString()
     val appIcon = app.loadIcon(packageManager).toBitmap().asImageBitmap()
-
     val popupWidth = 200.dp
     val popupHeight = 100.dp
 
@@ -301,9 +298,6 @@ fun launchApp(context: Context, app: ResolveInfo) {
     val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
     context.startActivity(launchIntent)
 }
-
-
-
 
 /*
  функция скрытия выбранного приложения из списка
