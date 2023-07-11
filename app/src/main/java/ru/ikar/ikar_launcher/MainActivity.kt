@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
-import android.content.res.ColorStateList
 import android.os.Bundle
 import androidx.compose.foundation.gestures.*
 import android.widget.Toast
@@ -19,7 +18,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -30,11 +28,14 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import android.util.Log
 import android.widget.CalendarView
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -316,18 +317,31 @@ fun CalendarAndClock() {
     }
 }
 
+// календарь
 @Composable
 fun CalendarWidget() {
-
-    AndroidView(
-        factory = { ctx ->
-            CalendarView(ctx).apply {
-                setBackgroundColor(Color(android.graphics.Color.rgb(255,153,184)).toArgb())
-
-            }
-        },
-        modifier = Modifier.fillMaxWidth().height(300.dp)
-    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+        ) {Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color(android.graphics.Color.rgb(255, 153, 184)))
+        ) {
+                AndroidView(
+                    factory = { ctx ->
+                        CalendarView(ctx).apply {
+                            setBackgroundColor(Color(android.graphics.Color.rgb(255, 153, 184)).toArgb())
+                        }
+                    }
+                )
+    }
+    }
 }
 
 @Composable
