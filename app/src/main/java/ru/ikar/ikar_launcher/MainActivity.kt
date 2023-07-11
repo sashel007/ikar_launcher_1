@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.content.res.ColorStateList
 import android.os.Bundle
 import androidx.compose.foundation.gestures.*
 import android.widget.Toast
@@ -34,6 +35,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -44,7 +46,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.delay
-import ru.ikar.ikar_launcher.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -133,11 +134,12 @@ class MainActivity : ComponentActivity() {
 //    }
 
     //обновляет список приложений с учетом того, что пользователь мог скрыть какие-то из списка
-    fun refreshInstalledApps() {
+//    не работает!!!
+    private fun refreshInstalledApps() {
         installedApps = getInstalledApps(packageManager)
     }
 
-    fun hideApp(context: Context, app: ResolveInfo) {
+    private fun hideApp(context: Context, app: ResolveInfo) {
         val packageName = app.activityInfo.packageName
         val componentName = ComponentName(packageName, app.activityInfo.name)
         packageManager.setComponentEnabledSetting(
@@ -161,10 +163,6 @@ fun AppLauncher(
     hideApp: (ResolveInfo) -> Unit
 ) {
     val context = LocalContext.current
-    val columns = 4
-    val cells = GridCells.Fixed(columns)
-    val itemsPerRow = 4
-    val rows = if (installedApps.isNotEmpty()) installedApps.chunked(itemsPerRow) else emptyList()
 
     var isIconButtonClicked by remember { mutableStateOf(false) }
 
@@ -287,9 +285,9 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
                                 Text(text = "Да ")
                             }
                         }
-                    })
+                    }
+                )
             }
-
         }
         Text(
             text = appName,
@@ -320,17 +318,16 @@ fun CalendarAndClock() {
 
 @Composable
 fun CalendarWidget() {
-    val context = LocalContext.current
 
     AndroidView(
         factory = { ctx ->
             CalendarView(ctx).apply {
-                // Configure the calendar view as needed
+                setBackgroundColor(Color(android.graphics.Color.rgb(255,153,184)).toArgb())
+
             }
         },
         modifier = Modifier.fillMaxWidth().height(300.dp)
     )
-
 }
 
 @Composable
