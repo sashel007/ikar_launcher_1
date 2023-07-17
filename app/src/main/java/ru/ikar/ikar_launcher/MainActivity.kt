@@ -36,8 +36,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -59,8 +57,7 @@ class MainActivity : ComponentActivity() {
     private var showAllApps by mutableStateOf(false)
     private var installedApps by mutableStateOf(emptyList<ResolveInfo>())
 
-
-    override fun onCreate(savedInstanceState: Bundle?) {1
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         //скрыл аппбар и навигейшн бар
@@ -73,8 +70,7 @@ class MainActivity : ComponentActivity() {
         packageManager = applicationContext.packageManager
 
         refreshInstalledApps() // Обновит список приложений, если пользователь перед этим скрыл
-        // какие-то приложения руками, перед тем как зайти в setContent
-
+                               // какие-то приложения руками, перед тем как зайти в setContent
 
         setContent {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -158,7 +154,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-//стартовове вью с кнопкой и скрытым списком
+//стартововые вью с кнопкой и скрытым списком
 @Composable
 fun AppLauncher(
     installedApps: List<ResolveInfo>,
@@ -169,8 +165,7 @@ fun AppLauncher(
     val context = LocalContext.current
 
     var isIconButtonClicked by remember { mutableStateOf(false) }
-    var showButton by remember { mutableStateOf(false)}
-    var buttonAnimationState by remember { mutableStateOf(false) }
+    var showButton by remember { mutableStateOf(true) }
 
     Box(Modifier.fillMaxSize()) {
         if (isIconButtonClicked) {
@@ -181,28 +176,31 @@ fun AppLauncher(
             )
         }
 
-        //кнопка "Открыть приложения"
-        IconButton(
-            onClick = {
-                onToggleAllApps()
-                isIconButtonClicked = !isIconButtonClicked
-            },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
-                .size(30.dp),
-            enabled = true,
-            colors = IconButtonDefaults.filledIconButtonColors(
-                contentColor = Color.Magenta,
-                disabledContentColor = Color.Gray
-            )
+        if (showButton) {
+            //кнопка "Открыть приложения"
+            IconButton(
+                onClick = {
+                    onToggleAllApps()
+                    isIconButtonClicked = !isIconButtonClicked
+                    showButton = false
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+                    .size(30.dp),
+                enabled = true,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    contentColor = Color.Magenta,
+                    disabledContentColor = Color.Gray
+                )
 
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Menu,
-                contentDescription = "App Drawer Icon",
-                tint = Color.White
-            )
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = "App Drawer Icon",
+                    tint = Color.White
+                )
+            }
         }
 
         val columns = 4
@@ -389,7 +387,6 @@ fun launchApp(context: Context, app: ResolveInfo) {
     val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
     context.startActivity(launchIntent)
 }
-
 
 /*
  функция скрытия выбранного приложения из списка
