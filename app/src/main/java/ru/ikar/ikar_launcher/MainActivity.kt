@@ -36,6 +36,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -58,14 +60,15 @@ class MainActivity : ComponentActivity() {
     private var installedApps by mutableStateOf(emptyList<ResolveInfo>())
 
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {1
         super.onCreate(savedInstanceState)
 
         //скрыл аппбар и навигейшн бар
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).let { controller ->
             controller.hide(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars())
-            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
         packageManager = applicationContext.packageManager
 
@@ -166,6 +169,8 @@ fun AppLauncher(
     val context = LocalContext.current
 
     var isIconButtonClicked by remember { mutableStateOf(false) }
+    var showButton by remember { mutableStateOf(false)}
+    var buttonAnimationState by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize()) {
         if (isIconButtonClicked) {
@@ -175,6 +180,7 @@ fun AppLauncher(
                     .background(Color.Gray.copy(alpha = 0.5f))
             )
         }
+
         //кнопка "Открыть приложения"
         IconButton(
             onClick = {
@@ -187,7 +193,7 @@ fun AppLauncher(
                 .size(30.dp),
             enabled = true,
             colors = IconButtonDefaults.filledIconButtonColors(
-                contentColor = Color.Magenta, // Change the icon color here
+                contentColor = Color.Magenta,
                 disabledContentColor = Color.Gray
             )
 
@@ -198,6 +204,7 @@ fun AppLauncher(
                 tint = Color.White
             )
         }
+
         val columns = 4
         val cells = GridCells.Fixed(columns)
         if (showAllApps) {
@@ -206,6 +213,8 @@ fun AppLauncher(
                     .align(Alignment.TopCenter)
                     .padding(horizontal = 16.dp, vertical = 16.dp)
                     .padding(bottom = 72.dp)
+                    .background(Color.White.copy(alpha = 0.6f))
+                    .clip(RoundedCornerShape(10.dp))
             ) {
                 LazyVerticalGrid(cells) {
                     items(installedApps.size) { index ->
@@ -239,7 +248,7 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
     Column(
         modifier = Modifier.padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
-    ){
+    ) {
         Box(
             modifier = Modifier
                 .size(35.dp)
@@ -278,7 +287,8 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
-                                onClick = { hideApp(app)
+                                onClick = {
+                                    hideApp(app)
                                     isPopupVisible = false
                                 },
                                 modifier = Modifier.fillMaxWidth()
@@ -293,7 +303,7 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
         Text(
             text = appName,
             textAlign = TextAlign.Center,
-            color = Color.White,
+            color = Color(android.graphics.Color.rgb(72, 3,111)),
             modifier = Modifier.padding(top = 4.dp)
         )
     }
@@ -323,27 +333,39 @@ fun CalendarWidget() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(300.dp)
+            .height(250.dp)
             .clip(RoundedCornerShape(16.dp))
-            .padding(16.dp),
+            .padding(8.dp)
+        ,
         contentAlignment = Alignment.Center
-        ) {Box(
+    ) {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(android.graphics.Color.rgb(255, 153, 184)))
+                .background(Color(android.graphics.Color.rgb(255, 153,  184)))
         ) {
-                AndroidView(
-                    factory = { ctx ->
-                        CalendarView(ctx).apply {
-                            setBackgroundColor(Color(android.graphics.Color.rgb(255, 153, 184)).toArgb())
-                        }
+            AndroidView(
+                factory = { ctx ->
+                    CalendarView(ctx).apply {
+                        setBackgroundColor(
+                            Color(
+                                android.graphics.Color.rgb(
+                                    255,
+                                    153,
+                                    184
+                                )
+                            ).toArgb()
+                        )
+                        setPadding(0,0,0,0)
                     }
-                )
-    }
+                }
+            )
+        }
     }
 }
 
+//часы
 @Composable
 fun ClockWidget() {
     val currentTime = remember { mutableStateOf("") }
