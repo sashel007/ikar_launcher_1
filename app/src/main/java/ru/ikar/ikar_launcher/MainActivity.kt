@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.compose.foundation.gestures.*
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -27,7 +29,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import android.util.Log
+import android.view.WindowManager
 import android.widget.CalendarView
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -40,6 +45,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -56,6 +62,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var packageManager: PackageManager
     private var showAllApps by mutableStateOf(false)
     private var installedApps by mutableStateOf(emptyList<ResolveInfo>())
+    private lateinit var windowManager: WindowManager
+    private lateinit var layoutParams: WindowManager.LayoutParams
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,6 +76,20 @@ class MainActivity : ComponentActivity() {
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
         packageManager = applicationContext.packageManager
+
+        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        layoutParams = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT
+        ).apply {
+            type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            format = android.graphics.PixelFormat.TRANSPARENT
+            width = 56
+            height = 56
+            x = 0
+            y = 0
+        }
 
         refreshInstalledApps() // Обновит список приложений, если пользователь перед этим скрыл
                                // какие-то приложения руками, перед тем как зайти в setContent
@@ -94,7 +116,8 @@ class MainActivity : ComponentActivity() {
                     onToggleAllApps = { showAllApps = !showAllApps },
                     hideApp = { app -> hideApp(context, app) }
                 )
-            }
+                FloatingToucher()
+           }
         }
     }
 
@@ -166,6 +189,7 @@ fun AppLauncher(
 
     var isIconButtonClicked by remember { mutableStateOf(false) }
     var showButton by remember { mutableStateOf(true) }
+    var swipeProgress by remember { mutableStateOf(0f) }
 
     Box(Modifier.fillMaxSize()) {
         if (isIconButtonClicked) {
@@ -173,6 +197,9 @@ fun AppLauncher(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Gray.copy(alpha = 0.5f))
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures { change, dragAmount -> }
+                    }
             )
         }
 
@@ -210,9 +237,9 @@ fun AppLauncher(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(horizontal = 16.dp, vertical = 16.dp)
-                    .padding(bottom = 72.dp)
                     .background(Color.White.copy(alpha = 0.6f))
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(20.dp))
+                    .offset { IntOffset(0, (-swipeProgress).toInt()) }
             ) {
                 LazyVerticalGrid(cells) {
                     items(installedApps.size) { index ->
@@ -333,15 +360,14 @@ fun CalendarWidget() {
             .fillMaxWidth()
             .height(250.dp)
             .clip(RoundedCornerShape(16.dp))
-            .padding(8.dp)
-        ,
+            .padding(8.dp),
         contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(android.graphics.Color.rgb(255, 153,  184)))
+                .background(Color(android.graphics.Color.rgb(255, 153, 184)))
         ) {
             AndroidView(
                 factory = { ctx ->
@@ -374,7 +400,6 @@ fun ClockWidget() {
             delay(1000)
         }
     }
-
     Text(
         text = currentTime.value,
         style = TextStyle(fontSize = 16.sp)
@@ -386,6 +411,28 @@ fun launchApp(context: Context, app: ResolveInfo) {
     val packageName = app.activityInfo.packageName
     val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
     context.startActivity(launchIntent)
+}
+
+@Composable
+fun FloatingToucher() {
+    val context = LocalContext.current
+
+    // Your custom UI for the floating toucher button
+    Box(
+        modifier = Modifier
+            .padding(16.dp)
+            .background(Color.Red)
+            .size(56.dp)
+            .clickable {
+                // Handle tap action here
+                Toast
+                    .makeText(context, "Floating Toucher tapped!", Toast.LENGTH_SHORT)
+                    .show()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Toucher", color = Color.White)
+    }
 }
 
 /*
