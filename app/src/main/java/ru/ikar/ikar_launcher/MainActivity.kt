@@ -41,6 +41,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -416,22 +418,49 @@ fun launchApp(context: Context, app: ResolveInfo) {
 @Composable
 fun FloatingToucher() {
     val context = LocalContext.current
+    val toucherSize = 56.dp
+    var toucherPosition by remember { mutableStateOf(Offset(0f, 0f)) }
+    var isDragging by remember { mutableStateOf(false) }
+    var touchOffset by remember { mutableStateOf(Offset(0f, 0f)) }
 
     // Your custom UI for the floating toucher button
     Box(
         modifier = Modifier
             .padding(16.dp)
-            .background(Color.Red)
-            .size(56.dp)
+            .background(Color.Transparent)
+            .size(toucherSize)
+            .graphicsLayer(
+                translationX = toucherPosition.x,
+                translationY = toucherPosition.y
+            )
+            .pointerInput(Unit) {
+                detectTransformGestures { _, pan, zoom, _ ->
+                    if (zoom == 1f) {
+                        if (isDragging) {
+                            toucherPosition = toucherPosition.plus(pan)
+                        } else {
+                            isDragging = true
+                            touchOffset = Offset(
+                                toucherPosition.x - pan.x,
+                                toucherPosition.y - pan.y
+                            )
+                        }
+                    }
+                }
+            }
             .clickable {
                 // Handle tap action here
-                Toast
-                    .makeText(context, "Floating Toucher tapped!", Toast.LENGTH_SHORT)
-                    .show()
+                Toast.makeText(context, "Floating Toucher tapped!", Toast.LENGTH_SHORT).show()
             },
         contentAlignment = Alignment.Center
     ) {
-        Text("Toucher", color = Color.White)
+        Box(
+            modifier = Modifier
+                .background(Color.Red)
+                .size(toucherSize)
+        ) {
+            Text("Toucher", color = Color.White)
+        }
     }
 }
 
