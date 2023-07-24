@@ -5,9 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
-import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import androidx.compose.foundation.gestures.*
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -31,7 +29,6 @@ import androidx.core.graphics.drawable.toBitmap
 import android.util.Log
 import android.view.WindowManager
 import android.widget.CalendarView
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
@@ -47,9 +44,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -138,6 +135,8 @@ class MainActivity : ComponentActivity() {
         return packageManager.queryIntentActivities(intent, 0)
     }
 
+
+
 //    @Suppress("DEPRECATION")
 //    private fun getInstalledApps(packageManager: PackageManager): List<ResolveInfo> {
 //        val intent = Intent(Intent.ACTION_MAIN, null).apply {
@@ -190,10 +189,15 @@ fun AppLauncher(
     hideApp: (ResolveInfo) -> Unit
 ) {
     val context = LocalContext.current
-
     var isIconButtonClicked by remember { mutableStateOf(false) }
     var showButton by remember { mutableStateOf(true) }
+
     var swipeProgress by remember { mutableStateOf(0f) }
+    var startY by remember { mutableStateOf(0f) }
+    var swipingInProgress by remember { mutableStateOf(false) }
+    var totalDragDistance by remember { mutableStateOf(0f) }
+    var verticalDragDistance by remember { mutableStateOf(0f) }
+
 
     Box(Modifier.fillMaxSize()) {
         if (isIconButtonClicked) {
@@ -201,9 +205,6 @@ fun AppLauncher(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Gray.copy(alpha = 0.5f))
-                    .pointerInput(Unit) {
-                        detectVerticalDragGestures { change, dragAmount -> }
-                    }
             )
         }
 
@@ -236,14 +237,24 @@ fun AppLauncher(
 
         val columns = 4
         val cells = GridCells.Fixed(columns)
+
         if (showAllApps) {
-            Column(
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(horizontal = 16.dp, vertical = 16.dp)
-                    .background(Color.White.copy(alpha = 0.6f))
+                    .background(Color.White.copy(alpha = 0.6f), shape = RoundedCornerShape(15.dp))
                     .clip(RoundedCornerShape(20.dp))
-                    .offset { IntOffset(0, (-swipeProgress).toInt()) }
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures { change, dragAmount ->
+                            verticalDragDistance += dragAmount
+                            if (verticalDragDistance > with(LocalDensity.current) { 200.dp.toPx() }) {
+                                onToggleAllApps() // Close the grid
+                                verticalDragDistance = 0f // Reset the drag distance after closing
+                            }
+                            change.consume()
+                        }
+                    }
             ) {
                 LazyVerticalGrid(cells) {
                     items(installedApps.size) { index ->
@@ -511,6 +522,8 @@ fun FloatingToucher() {
         }
     }
 }
+
+
 
 
 /*
