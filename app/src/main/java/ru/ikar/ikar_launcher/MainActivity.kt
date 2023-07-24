@@ -32,7 +32,9 @@ import android.util.Log
 import android.view.WindowManager
 import android.widget.CalendarView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -422,12 +424,11 @@ fun FloatingToucher() {
     var toucherPosition by remember { mutableStateOf(Offset(0f, 0f)) }
     var isDragging by remember { mutableStateOf(false) }
     var touchOffset by remember { mutableStateOf(Offset(0f, 0f)) }
+    var isMenuVisible by remember { mutableStateOf(false) } // State to control menu visibility
 
-    // Your custom UI for the floating toucher button
     Box(
         modifier = Modifier
             .padding(16.dp)
-            .background(Color.Transparent)
             .size(toucherSize)
             .graphicsLayer(
                 translationX = toucherPosition.x,
@@ -450,19 +451,67 @@ fun FloatingToucher() {
             }
             .clickable {
                 // Handle tap action here
-                Toast.makeText(context, "Floating Toucher tapped!", Toast.LENGTH_SHORT).show()
+                isMenuVisible = true // Show the menu on button click
             },
         contentAlignment = Alignment.Center
     ) {
+        Button(
+            onClick = {
+                // Handle button click action here
+                isMenuVisible = true // Show the menu on button click
+            },
+            modifier = Modifier
+                .padding(8.dp)
+                .align(Alignment.BottomCenter)
+                .border(2.dp, Color.Red, CircleShape) // Add a 2dp red border around the button
+        ) {
+            Text("Button")
+        }
+    }
+
+    // Popup menu
+    if (isMenuVisible) {
         Box(
             modifier = Modifier
-                .background(Color.Red)
-                .size(toucherSize)
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .pointerInput(Unit) {
+                    detectTapGestures {
+                        isMenuVisible = false // Close the menu on outside tap
+                    }
+                }
         ) {
-            Text("Toucher", color = Color.White)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                Column {
+                    Button(
+                        onClick = {
+                            // Handle menu option 1 action here
+                            Toast.makeText(context, "Option 1 clicked!", Toast.LENGTH_SHORT).show()
+                            isMenuVisible = false // Close the menu after clicking an option
+                        }
+                    ) {
+                        Text("Option 1")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            // Handle menu option 2 action here
+                            Toast.makeText(context, "Option 2 clicked!", Toast.LENGTH_SHORT).show()
+                            isMenuVisible = false // Close the menu after clicking an option
+                        }
+                    ) {
+                        Text("Option 2")
+                    }
+                }
+            }
         }
     }
 }
+
 
 /*
  функция скрытия выбранного приложения из списка
