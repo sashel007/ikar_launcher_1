@@ -44,7 +44,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
@@ -545,15 +552,26 @@ fun launchApp(context: Context, app: ResolveInfo) {
 @Composable
 fun FloatingToucher() {
     val context = LocalContext.current
-    val buttonSize = 50.dp
+    val buttonSize = 40.dp
     var isMenuVisible by remember { mutableStateOf(false) } // State to control menu visibility
     var toucherPosition by remember { mutableStateOf(Offset(0f, 0f)) }
     var isDragging by remember { mutableStateOf(false) }
     var touchOffset by remember { mutableStateOf(Offset(0f, 0f)) }
+    val buttonColors = Color(0xFF9B1E1E)
+
+    fun getSystemIcon(index: Int): ImageVector {
+        return when (index) {
+            0 -> Icons.Filled.Home
+            1 -> Icons.Filled.Favorite
+            2 -> Icons.Filled.Settings
+            3 -> Icons.Filled.Person
+            4 -> Icons.Filled.Star
+            else -> Icons.Filled.Home // You can return any default icon here
+        }
+    }
 
     Box(
         modifier = Modifier
-            .padding(16.dp)
             .size(buttonSize)
             .graphicsLayer(
                 translationX = toucherPosition.x,
@@ -583,16 +601,16 @@ fun FloatingToucher() {
                 // Handle main button click action here
                 isMenuVisible = !isMenuVisible // Toggle the menu on button click
             },
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Text("Button")
+            modifier = Modifier.fillMaxSize(),
+            colors = ButtonDefaults.buttonColors(buttonColors.copy(alpha = 0.8f))
+      ) {
         }
 
         // Little buttons (5 buttons around the main button)
         if (isMenuVisible) {
             for (i in 0 until 5) {
                 val angle = i * (360f / 5f)
-                val radius = 100.dp // Adjust the radius as needed
+                val radius = 160.dp // Adjust the radius as needed
                 val x = cos(Math.toRadians(angle.toDouble())).toFloat() * radius.value
                 val y = sin(Math.toRadians(angle.toDouble())).toFloat() * radius.value
 
@@ -607,9 +625,14 @@ fun FloatingToucher() {
                             Toast.makeText(context, "Button $i clicked!", Toast.LENGTH_SHORT).show()
                             isMenuVisible = false // Close the menu after clicking a button
                         },
-                        modifier = Modifier.fillMaxSize()
+                        colors = ButtonDefaults.buttonColors(buttonColors.copy(alpha = 0.8f))
                     ) {
-                        Text("B$i")
+                        Icon(
+                            imageVector = getSystemIcon(i),
+                            contentDescription = "System Icon",
+                            tint = Color.White,
+                            modifier = Modifier.fillMaxSize()// Adjust the icon size as needed
+                        )
                     }
                 }
             }
