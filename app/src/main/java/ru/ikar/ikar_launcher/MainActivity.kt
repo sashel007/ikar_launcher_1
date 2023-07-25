@@ -27,8 +27,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.WindowManager
 import android.widget.CalendarView
+import android.widget.ImageView
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.calculateTargetValue
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.splineBasedDecay
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
@@ -39,26 +47,33 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.absoluteValue
+import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
 
@@ -120,6 +135,7 @@ class MainActivity : ComponentActivity() {
                     hideApp = { app -> hideApp(context, app) }
                 )
                 FloatingToucher()
+//                FloatingPoint()
            }
         }
     }
@@ -199,6 +215,16 @@ fun AppLauncher(
     var swipingInProgress by remember { mutableStateOf(false) }
     var totalDragDistance by remember { mutableStateOf(0f) }
     var verticalDragDistance by remember { mutableStateOf(0f) }
+    // Add a CoroutineScope to launch the animation
+    val coroutineScope = rememberCoroutineScope()
+    val offsetYState = animateDpAsState(targetValue = if (showAllApps) 0.dp else 300.dp)
+
+
+    // State to animate the Y offset of the grid
+    val offsetY: Float by animateFloatAsState(
+        targetValue = if (showAllApps) 0f else 800f, // Change the targetValue to the desired closing position
+        animationSpec = tween(durationMillis = 300) // Adjust the duration as needed
+    )
 
 
     Box(Modifier.fillMaxSize()) {
@@ -247,7 +273,7 @@ fun AppLauncher(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(horizontal = 16.dp, vertical = 16.dp)
-                    .background(Color.White.copy(alpha = 0.6f), shape = RoundedCornerShape(15.dp))
+                    .background(Color.White.copy(alpha = 0.85f), shape = RoundedCornerShape(15.dp))
                     .clip(RoundedCornerShape(20.dp))
                     .pointerInput(Unit) {
                         detectTapGestures { offset ->
@@ -257,32 +283,9 @@ fun AppLauncher(
                                 showButton = true
                             }
                         }
-                        detectVerticalDragGestures(
-                            onDragStart = { offset ->
-                                offsetY = offset.y.toDp()
-                                isDragging = true
-                            },
-                            onDragEnd = {
-                                startY = 0f
-                                swipingInProgress = false
-                                verticalDragDistance = 0f
-                            },
-                            onDragCancel = {
-                                startY = 0f
-                                swipingInProgress = false
-                                verticalDragDistance = 0f
-                            },
-                            onVerticalDrag = { change, dragDistance ->
-                                verticalDragDistance = change.positionChange().y
-
-                                // Check if the user is swiping down and has dragged a certain distance
-                                if (verticalDragDistance > 50.dp.toPx()) {
-                                    // Close the grid
-                                    onToggleAllApps()
-                                }
-                            }
-                        )
                     }
+
+
             ) {
                 LazyVerticalGrid(cells) {
                     items(installedApps.size) { index ->
@@ -293,6 +296,66 @@ fun AppLauncher(
             }
         }
     }
+}
+
+fun Modifier.swipeToDismiss(
+    onDismissed: () -> Unit
+): Modifier = composed {
+    val offsetX = remember { Animatable(0f) }
+    pointerInput(Unit) {
+        // Used to calculate fling decay.
+        val decay = splineBasedDecay<Float>(this)
+        // Use suspend functions for touch events and the Animatable.
+        coroutineScope {
+            while (true) {
+                val velocityTracker = VelocityTracker()
+                // Stop any ongoing animation.
+                offsetX.stop()
+                awaitPointerEventScope {
+                    // Detect a touch down event.
+                    val pointerId = awaitFirstDown().id
+
+                    horizontalDrag(pointerId) { change ->
+                        // Update the animation value with touch events.
+                        launch {
+                            offsetX.snapTo(
+                                offsetX.value + change.positionChange().x
+                            )
+                        }
+                        velocityTracker.addPosition(
+                            change.uptimeMillis,
+                            change.position
+                        )
+                    }
+                }
+                // No longer receiving touch events. Prepare the animation.
+                val velocity = velocityTracker.calculateVelocity().x
+                val targetOffsetX = decay.calculateTargetValue(
+                    offsetX.value,
+                    velocity
+                )
+                // The animation stops when it reaches the bounds.
+                offsetX.updateBounds(
+                    lowerBound = -size.width.toFloat(),
+                    upperBound = size.width.toFloat()
+                )
+                launch {
+                    if (targetOffsetX.absoluteValue <= size.width) {
+                        // Not enough velocity; Slide back.
+                        offsetX.animateTo(
+                            targetValue = 0f,
+                            initialVelocity = velocity
+                        )
+                    } else {
+                        // The element was swiped away.
+                        offsetX.animateDecay(velocity, decay)
+                        onDismissed()
+                    }
+                }
+            }
+        }
+    }
+        .offset { IntOffset(offsetX.value.roundToInt(), 0) }
 }
 
 //отрисовка приложений внутри списка приложений
@@ -456,19 +519,41 @@ fun launchApp(context: Context, app: ResolveInfo) {
     context.startActivity(launchIntent)
 }
 
+//@Composable
+//fun FloatingPoint() {
+//    // Reference to the floating point layout
+//    AndroidView(
+//        factory = { context ->
+//            LayoutInflater.from(context).inflate(R.layout.floating_pointer, null)
+//        },
+//        update = { view ->
+//            // Update the view if needed (e.g., set click listeners)
+//            view.findViewById<ImageView>(R.id.floating_point_icon).setOnClickListener {
+//                // Handle the click action here
+//                Toast.makeText(it.context, "Floating point clicked!", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//    )
+//}
+
+
+
 @Composable
 fun FloatingToucher() {
     val context = LocalContext.current
-    val toucherSize = 56.dp
+    val toucherSize = 50.dp
     var toucherPosition by remember { mutableStateOf(Offset(0f, 0f)) }
     var isDragging by remember { mutableStateOf(false) }
     var touchOffset by remember { mutableStateOf(Offset(0f, 0f)) }
     var isMenuVisible by remember { mutableStateOf(false) } // State to control menu visibility
 
+    val expandedHeight = animateDpAsState(targetValue = if (isMenuVisible) 150.dp else toucherSize)
+
     Box(
         modifier = Modifier
             .padding(16.dp)
-            .size(toucherSize)
+            .width(expandedHeight.value)
+            .height(expandedHeight.value)
             .graphicsLayer(
                 translationX = toucherPosition.x,
                 translationY = toucherPosition.y
@@ -494,61 +579,63 @@ fun FloatingToucher() {
             },
         contentAlignment = Alignment.Center
     ) {
-        Button(
-            onClick = {
-                // Handle button click action here
-                isMenuVisible = true // Show the menu on button click
-            },
-            modifier = Modifier
-                .padding(8.dp)
-                .align(Alignment.BottomCenter)
-                .border(2.dp, Color.Red, CircleShape) // Add a 2dp red border around the button
-        ) {
-            Text("Button")
+        Row(verticalAlignment = Alignment.Bottom) {
+            Button(
+                onClick = {
+                    // Handle button click action here
+                    isMenuVisible = true // Show the menu on button click
+                },
+                modifier = Modifier
+                    .padding(8.dp)
+                    .border(2.dp, Color.Red, CircleShape) // Add a 2dp red border around the button
+            ) {
+                Text("Button")
+            }
         }
-    }
-
-    // Popup menu
-    if (isMenuVisible) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f))
-                .pointerInput(Unit) {
-                    detectTapGestures {
-                        isMenuVisible = false // Close the menu on outside tap
-                    }
-                }
-        ) {
+        // Popup menu
+        if (isMenuVisible) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-            ) {
-                Column {
-                    Button(
-                        onClick = {
-                            // Handle menu option 1 action here
-                            Toast.makeText(context, "Option 1 clicked!", Toast.LENGTH_SHORT).show()
-                            isMenuVisible = false // Close the menu after clicking an option
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .pointerInput(Unit) {
+                        detectTapGestures {
+                            isMenuVisible = false // Close the menu on outside tap
                         }
-                    ) {
-                        Text("Option 1")
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = {
-                            // Handle menu option 2 action here
-                            Toast.makeText(context, "Option 2 clicked!", Toast.LENGTH_SHORT).show()
-                            isMenuVisible = false // Close the menu after clicking an option
+            ) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        Button(
+                            onClick = {
+                                // Handle menu option 1 action here
+                                Toast.makeText(context, "Option 1 clicked!", Toast.LENGTH_SHORT).show()
+                                isMenuVisible = false // Close the menu after clicking an option
+                            }
+                        ) {
+                            Text("Option 1")
                         }
-                    ) {
-                        Text("Option 2")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = {
+                                // Handle menu option 2 action here
+                                Toast.makeText(context, "Option 2 clicked!", Toast.LENGTH_SHORT).show()
+                                isMenuVisible = false // Close the menu after clicking an option
+                            }
+                        ) {
+                            Text("Option 2")
+                        }
                     }
                 }
             }
         }
     }
+
+
 }
 
 
