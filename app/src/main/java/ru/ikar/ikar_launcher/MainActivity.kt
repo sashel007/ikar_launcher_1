@@ -43,7 +43,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -73,7 +75,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.absoluteValue
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
 
@@ -541,19 +545,16 @@ fun launchApp(context: Context, app: ResolveInfo) {
 @Composable
 fun FloatingToucher() {
     val context = LocalContext.current
-    val toucherSize = 50.dp
+    val buttonSize = 50.dp
+    var isMenuVisible by remember { mutableStateOf(false) } // State to control menu visibility
     var toucherPosition by remember { mutableStateOf(Offset(0f, 0f)) }
     var isDragging by remember { mutableStateOf(false) }
     var touchOffset by remember { mutableStateOf(Offset(0f, 0f)) }
-    var isMenuVisible by remember { mutableStateOf(false) } // State to control menu visibility
-
-    val expandedHeight = animateDpAsState(targetValue = if (isMenuVisible) 150.dp else toucherSize)
 
     Box(
         modifier = Modifier
             .padding(16.dp)
-            .width(expandedHeight.value)
-            .height(expandedHeight.value)
+            .size(buttonSize)
             .graphicsLayer(
                 translationX = toucherPosition.x,
                 translationY = toucherPosition.y
@@ -572,71 +573,111 @@ fun FloatingToucher() {
                         }
                     }
                 }
+                detectTapGestures {
+                    isMenuVisible = !isMenuVisible // Toggle the menu on button tap
+                }
             }
-            .clickable {
-                // Handle tap action here
-                isMenuVisible = true // Show the menu on button click
-            },
-        contentAlignment = Alignment.Center
     ) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Button(
-                onClick = {
-                    // Handle button click action here
-                    isMenuVisible = true // Show the menu on button click
-                },
-                modifier = Modifier
-                    .padding(8.dp)
-                    .border(2.dp, Color.Red, CircleShape) // Add a 2dp red border around the button
-            ) {
-                Text("Button")
-            }
+        Button(
+            onClick = {
+                // Handle main button click action here
+                isMenuVisible = !isMenuVisible // Toggle the menu on button click
+            },
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Text("Button")
         }
-        // Popup menu
+
+        // Little buttons (5 buttons around the main button)
         if (isMenuVisible) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .pointerInput(Unit) {
-                        detectTapGestures {
-                            isMenuVisible = false // Close the menu on outside tap
-                        }
-                    }
-            ) {
+            for (i in 0 until 5) {
+                val angle = i * (360f / 5f)
+                val radius = 100.dp // Adjust the radius as needed
+                val x = cos(Math.toRadians(angle.toDouble())).toFloat() * radius.value
+                val y = sin(Math.toRadians(angle.toDouble())).toFloat() * radius.value
+
                 Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(16.dp)
+                        .size(buttonSize)
+                        .offset { IntOffset(x.roundToInt(), y.roundToInt()) }
                 ) {
-                    Column {
-                        Button(
-                            onClick = {
-                                // Handle menu option 1 action here
-                                Toast.makeText(context, "Option 1 clicked!", Toast.LENGTH_SHORT).show()
-                                isMenuVisible = false // Close the menu after clicking an option
-                            }
-                        ) {
-                            Text("Option 1")
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = {
-                                // Handle menu option 2 action here
-                                Toast.makeText(context, "Option 2 clicked!", Toast.LENGTH_SHORT).show()
-                                isMenuVisible = false // Close the menu after clicking an option
-                            }
-                        ) {
-                            Text("Option 2")
-                        }
+                    Button(
+                        onClick = {
+                            // Handle little button click action here
+                            Toast.makeText(context, "Button $i clicked!", Toast.LENGTH_SHORT).show()
+                            isMenuVisible = false // Close the menu after clicking a button
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Text("B$i")
                     }
                 }
             }
         }
     }
-
-
 }
+
+
+
+
+
+//        Row(verticalAlignment = Alignment.Bottom) {
+//            Button(
+//                onClick = {
+//                    // Handle button click action here
+//                    isMenuVisible = true // Show the menu on button click
+//                },
+//                modifier = Modifier
+//                    .padding(8.dp)
+//                    .border(2.dp, Color.Red, CircleShape) // Add a 2dp red border around the button
+//            ) {
+//                Text("Button")
+//            }
+//        }
+//        // Popup menu
+//        if (isMenuVisible) {
+//            Box(
+//                modifier = Modifier
+//                    .fillMaxSize()
+//                    .background(Color.Black.copy(alpha = 0.5f))
+//                    .pointerInput(Unit) {
+//                        detectTapGestures {
+//                            isMenuVisible = false // Close the menu on outside tap
+//                        }
+//                    }
+//            ) {
+//                Box(
+//                    modifier = Modifier
+//                        .align(Alignment.TopEnd)
+//                        .padding(16.dp)
+//                ) {
+//                    Column {
+//                        Button(
+//                            onClick = {
+//                                // Handle menu option 1 action here
+//                                Toast.makeText(context, "Option 1 clicked!", Toast.LENGTH_SHORT).show()
+//                                isMenuVisible = false // Close the menu after clicking an option
+//                            }
+//                        ) {
+//                            Text("Option 1")
+//                        }
+//                        Spacer(modifier = Modifier.height(8.dp))
+//                        Button(
+//                            onClick = {
+//                                // Handle menu option 2 action here
+//                                Toast.makeText(context, "Option 2 clicked!", Toast.LENGTH_SHORT).show()
+//                                isMenuVisible = false // Close the menu after clicking an option
+//                            }
+//                        ) {
+//                            Text("Option 2")
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+
+
 
 
 
