@@ -43,6 +43,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -200,13 +202,13 @@ fun AppLauncher(
 
 
     Box(Modifier.fillMaxSize()) {
-        if (isIconButtonClicked) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Gray.copy(alpha = 0.5f))
-            )
-        }
+//        if (isIconButtonClicked) {
+//            Box(
+//                modifier = Modifier
+//                    .fillMaxSize()
+//                    .background(Color.Gray.copy(alpha = 0.5f))
+//            )
+//        }
 
         if (showButton) {
             //кнопка "Открыть приложения"
@@ -237,6 +239,8 @@ fun AppLauncher(
 
         val columns = 4
         val cells = GridCells.Fixed(columns)
+        var offsetY by remember { mutableStateOf(0.dp) }
+        var isDragging by remember { mutableStateOf(false) }
 
         if (showAllApps) {
             Box(
@@ -246,14 +250,38 @@ fun AppLauncher(
                     .background(Color.White.copy(alpha = 0.6f), shape = RoundedCornerShape(15.dp))
                     .clip(RoundedCornerShape(20.dp))
                     .pointerInput(Unit) {
-                        detectVerticalDragGestures { change, dragAmount ->
-                            verticalDragDistance += dragAmount
-                            if (verticalDragDistance > with(LocalDensity.current) { 200.dp.toPx() }) {
-                                onToggleAllApps() // Close the grid
-                                verticalDragDistance = 0f // Reset the drag distance after closing
+                        detectTapGestures { offset ->
+                            // Check if the tap is inside the grid area, if not, close the grid
+                            if (offset.y < 200.dp.toPx()) {
+                                onToggleAllApps()
+                                showButton = true
                             }
-                            change.consume()
                         }
+                        detectVerticalDragGestures(
+                            onDragStart = { offset ->
+                                offsetY = offset.y.toDp()
+                                isDragging = true
+                            },
+                            onDragEnd = {
+                                startY = 0f
+                                swipingInProgress = false
+                                verticalDragDistance = 0f
+                            },
+                            onDragCancel = {
+                                startY = 0f
+                                swipingInProgress = false
+                                verticalDragDistance = 0f
+                            },
+                            onVerticalDrag = { change, dragDistance ->
+                                verticalDragDistance = change.positionChange().y
+
+                                // Check if the user is swiping down and has dragged a certain distance
+                                if (verticalDragDistance > 50.dp.toPx()) {
+                                    // Close the grid
+                                    onToggleAllApps()
+                                }
+                            }
+                        )
                     }
             ) {
                 LazyVerticalGrid(cells) {
