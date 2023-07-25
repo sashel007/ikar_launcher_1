@@ -30,6 +30,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.WindowManager
 import android.widget.CalendarView
+import android.widget.ImageButton
 import android.widget.ImageView
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
@@ -56,18 +57,26 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -85,6 +94,8 @@ import kotlin.math.absoluteValue
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import androidx.compose.ui.res.imageResource
+
 
 class MainActivity : ComponentActivity() {
 
@@ -552,27 +563,28 @@ fun launchApp(context: Context, app: ResolveInfo) {
 @Composable
 fun FloatingToucher() {
     val context = LocalContext.current
-    val buttonSize = 40.dp
+    val basicButtonSize = 40.dp
+    val iconButtonSize = 30.dp
     var isMenuVisible by remember { mutableStateOf(false) } // State to control menu visibility
     var toucherPosition by remember { mutableStateOf(Offset(0f, 0f)) }
     var isDragging by remember { mutableStateOf(false) }
     var touchOffset by remember { mutableStateOf(Offset(0f, 0f)) }
     val buttonColors = Color(0xFF9B1E1E)
 
-    fun getSystemIcon(index: Int): ImageVector {
+    fun getSystemIcon(index: Int): Int {
         return when (index) {
-            0 -> Icons.Filled.Home
-            1 -> Icons.Filled.Favorite
-            2 -> Icons.Filled.Settings
-            3 -> Icons.Filled.Person
-            4 -> Icons.Filled.Star
-            else -> Icons.Filled.Home // You can return any default icon here
+            0 -> R.drawable.baseline_settings_24
+            1 -> R.drawable.baseline_home_24
+            2 -> R.drawable.baseline_volume_up_24
+            3 -> R.drawable.baseline_brightness_medium_24
+            4 -> R.drawable.baseline_desktop_mac_24
+            else -> R.drawable.setting_icon // Return null for any other index or add more cases as needed
         }
     }
 
     Box(
         modifier = Modifier
-            .size(buttonSize)
+            .size(basicButtonSize)
             .graphicsLayer(
                 translationX = toucherPosition.x,
                 translationY = toucherPosition.y
@@ -610,31 +622,60 @@ fun FloatingToucher() {
         if (isMenuVisible) {
             for (i in 0 until 5) {
                 val angle = i * (360f / 5f)
-                val radius = 160.dp // Adjust the radius as needed
+                val radius = 120.dp // Adjust the radius as needed
+
                 val x = cos(Math.toRadians(angle.toDouble())).toFloat() * radius.value
                 val y = sin(Math.toRadians(angle.toDouble())).toFloat() * radius.value
 
                 Box(
                     modifier = Modifier
-                        .size(buttonSize)
+                        .size(iconButtonSize)
                         .offset { IntOffset(x.roundToInt(), y.roundToInt()) }
                 ) {
-                    Button(
-                        onClick = {
-                            // Handle little button click action here
-                            Toast.makeText(context, "Button $i clicked!", Toast.LENGTH_SHORT).show()
-                            isMenuVisible = false // Close the menu after clicking a button
-                        },
-                        colors = ButtonDefaults.buttonColors(buttonColors.copy(alpha = 0.8f))
-                    ) {
-                        Icon(
-                            imageVector = getSystemIcon(i),
-                            contentDescription = "System Icon",
-                            tint = Color.White,
-                            modifier = Modifier.fillMaxSize()// Adjust the icon size as needed
-                        )
-                    }
+                    val systemIcon = painterResource(getSystemIcon(i))
+                    Image(
+                        painter = systemIcon,
+                        contentDescription = "System Icon",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable(
+                                onClick = {
+                                    when (i) {
+                                        0 -> {
+                                            // Handle action for the first button (index 0)
+                                            // For example, open the settings activity
+                                        }
+
+                                        1 -> {
+                                            // Handle action for the second button (index 1)
+                                            // For example, navigate to the home screen
+                                        }
+
+                                        2 -> {
+                                            // Handle action for the second button (index 1)
+                                            // For example, navigate to the home screen
+                                        }
+
+                                        3 -> {
+                                            // Handle action for the second button (index 1)
+                                            // For example, navigate to the home screen
+                                        }
+
+                                        4 -> {
+                                            // Handle action for the second button (index 1)
+                                            // For example, navigate to the home screen
+                                        }
+                                        // Handle other cases for other buttons
+                                        else -> {
+                                            // Handle the default case or add more cases as needed
+                                        }
+                                    }
+                                }
+                            ),
+                        contentScale = ContentScale.Fit // Adjust content scale as needed
+                    )
                 }
+
             }
         }
     }
