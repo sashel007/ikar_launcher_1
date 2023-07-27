@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.os.Bundle
+import android.provider.Settings
 import androidx.compose.foundation.gestures.*
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -27,56 +28,27 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.WindowManager
 import android.widget.CalendarView
-import android.widget.ImageButton
-import android.widget.ImageView
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.calculateTargetValue
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.splineBasedDecay
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.ui.composed
-import androidx.compose.ui.draw.alpha
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.PointerInputChange
-import androidx.compose.ui.input.pointer.positionChange
-import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -84,18 +56,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.math.absoluteValue
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
-import androidx.compose.ui.res.imageResource
-
 
 class MainActivity : ComponentActivity() {
 
@@ -232,32 +199,7 @@ fun AppLauncher(
     var isIconButtonClicked by remember { mutableStateOf(false) }
     var showButton by remember { mutableStateOf(true) }
 
-    var swipeProgress by remember { mutableStateOf(0f) }
-    var startY by remember { mutableStateOf(0f) }
-    var swipingInProgress by remember { mutableStateOf(false) }
-    var totalDragDistance by remember { mutableStateOf(0f) }
-    var verticalDragDistance by remember { mutableStateOf(0f) }
-    // Add a CoroutineScope to launch the animation
-    val coroutineScope = rememberCoroutineScope()
-    val offsetYState = animateDpAsState(targetValue = if (showAllApps) 0.dp else 300.dp)
-
-
-    // State to animate the Y offset of the grid
-    val offsetY: Float by animateFloatAsState(
-        targetValue = if (showAllApps) 0f else 800f, // Change the targetValue to the desired closing position
-        animationSpec = tween(durationMillis = 300) // Adjust the duration as needed
-    )
-
-
     Box(Modifier.fillMaxSize()) {
-//        if (isIconButtonClicked) {
-//            Box(
-//                modifier = Modifier
-//                    .fillMaxSize()
-//                    .background(Color.Gray.copy(alpha = 0.5f))
-//            )
-//        }
-
         if (showButton) {
             //кнопка "Открыть приложения"
             IconButton(
@@ -287,8 +229,6 @@ fun AppLauncher(
 
         val columns = 4
         val cells = GridCells.Fixed(columns)
-        var offsetY by remember { mutableStateOf(0.dp) }
-        var isDragging by remember { mutableStateOf(false) }
 
         if (showAllApps) {
             Box(
@@ -318,66 +258,6 @@ fun AppLauncher(
             }
         }
     }
-}
-
-fun Modifier.swipeToDismiss(
-    onDismissed: () -> Unit
-): Modifier = composed {
-    val offsetX = remember { Animatable(0f) }
-    pointerInput(Unit) {
-        // Used to calculate fling decay.
-        val decay = splineBasedDecay<Float>(this)
-        // Use suspend functions for touch events and the Animatable.
-        coroutineScope {
-            while (true) {
-                val velocityTracker = VelocityTracker()
-                // Stop any ongoing animation.
-                offsetX.stop()
-                awaitPointerEventScope {
-                    // Detect a touch down event.
-                    val pointerId = awaitFirstDown().id
-
-                    horizontalDrag(pointerId) { change ->
-                        // Update the animation value with touch events.
-                        launch {
-                            offsetX.snapTo(
-                                offsetX.value + change.positionChange().x
-                            )
-                        }
-                        velocityTracker.addPosition(
-                            change.uptimeMillis,
-                            change.position
-                        )
-                    }
-                }
-                // No longer receiving touch events. Prepare the animation.
-                val velocity = velocityTracker.calculateVelocity().x
-                val targetOffsetX = decay.calculateTargetValue(
-                    offsetX.value,
-                    velocity
-                )
-                // The animation stops when it reaches the bounds.
-                offsetX.updateBounds(
-                    lowerBound = -size.width.toFloat(),
-                    upperBound = size.width.toFloat()
-                )
-                launch {
-                    if (targetOffsetX.absoluteValue <= size.width) {
-                        // Not enough velocity; Slide back.
-                        offsetX.animateTo(
-                            targetValue = 0f,
-                            initialVelocity = velocity
-                        )
-                    } else {
-                        // The element was swiped away.
-                        offsetX.animateDecay(velocity, decay)
-                        onDismissed()
-                    }
-                }
-            }
-        }
-    }
-        .offset { IntOffset(offsetX.value.roundToInt(), 0) }
 }
 
 //отрисовка приложений внутри списка приложений
@@ -541,25 +421,6 @@ fun launchApp(context: Context, app: ResolveInfo) {
     context.startActivity(launchIntent)
 }
 
-//@Composable
-//fun FloatingPoint() {
-//    // Reference to the floating point layout
-//    AndroidView(
-//        factory = { context ->
-//            LayoutInflater.from(context).inflate(R.layout.floating_pointer, null)
-//        },
-//        update = { view ->
-//            // Update the view if needed (e.g., set click listeners)
-//            view.findViewById<ImageView>(R.id.floating_point_icon).setOnClickListener {
-//                // Handle the click action here
-//                Toast.makeText(it.context, "Floating point clicked!", Toast.LENGTH_SHORT).show()
-//            }
-//        }
-//    )
-//}
-
-
-
 @Composable
 fun FloatingToucher() {
     val context = LocalContext.current
@@ -570,6 +431,14 @@ fun FloatingToucher() {
     var isDragging by remember { mutableStateOf(false) }
     var touchOffset by remember { mutableStateOf(Offset(0f, 0f)) }
     val buttonColors = Color(0xFF9B1E1E)
+    var isVolumeSliderVisible by remember { mutableStateOf(false) }
+    var volumeValue by remember { mutableStateOf(0.5f) }
+    var volumeIconX by remember { mutableStateOf(0f) }
+    var volumeIconY by remember { mutableStateOf(0f) }
+    val density = LocalDensity.current
+    val sliderAdditionalOffset = with(LocalDensity.current) { 100.dp.toPx() }
+
+
 
     fun getSystemIcon(index: Int): Int {
         return when (index) {
@@ -582,165 +451,158 @@ fun FloatingToucher() {
         }
     }
 
-    Box(
-        modifier = Modifier
-            .size(basicButtonSize)
-            .graphicsLayer(
-                translationX = toucherPosition.x,
-                translationY = toucherPosition.y
-            )
-            .pointerInput(Unit) {
-                detectTransformGestures { _, pan, zoom, _ ->
-                    if (zoom == 1f) {
-                        if (isDragging) {
-                            toucherPosition = toucherPosition.plus(pan)
-                        } else {
-                            isDragging = true
-                            touchOffset = Offset(
-                                toucherPosition.x - pan.x,
-                                toucherPosition.y - pan.y
-                            )
+    fun openSettings(context: Context) {
+        val settingsIntent = Intent(Settings.ACTION_SETTINGS)
+        context.startActivity(settingsIntent)
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .size(basicButtonSize)
+                .graphicsLayer(
+                    translationX = toucherPosition.x,
+                    translationY = toucherPosition.y
+                )
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        if (zoom == 1f) {
+                            if (isDragging) {
+                                toucherPosition = toucherPosition.plus(pan)
+                            } else {
+                                isDragging = true
+                                touchOffset = Offset(
+                                    toucherPosition.x - pan.x,
+                                    toucherPosition.y - pan.y
+                                )
+                            }
                         }
                     }
+                    detectTapGestures {
+                        isMenuVisible = !isMenuVisible // Toggle the menu on button tap
+                    }
                 }
-                detectTapGestures {
-                    isMenuVisible = !isMenuVisible // Toggle the menu on button tap
-                }
+        ) {
+            Button(
+                onClick = {
+                    // Handle main button click action here
+                    isMenuVisible = !isMenuVisible // Toggle the menu on button click
+                },
+                modifier = Modifier.fillMaxSize(),
+                colors = ButtonDefaults.buttonColors(buttonColors.copy(alpha = 0.8f))
+            ) {
             }
-    ) {
-        Button(
-            onClick = {
-                // Handle main button click action here
-                isMenuVisible = !isMenuVisible // Toggle the menu on button click
-            },
-            modifier = Modifier.fillMaxSize(),
-            colors = ButtonDefaults.buttonColors(buttonColors.copy(alpha = 0.8f))
-      ) {
-        }
 
-        // Little buttons (5 buttons around the main button)
-        if (isMenuVisible) {
-            for (i in 0 until 5) {
-                val angle = i * (360f / 5f)
-                val radius = 120.dp // Adjust the radius as needed
+            // Little buttons (5 buttons around the main button)
+            if (isMenuVisible) {
+                Box(Modifier.fillMaxSize()) {
+                    for (i in 0 until 5) {
+                        val angle = i * (360f / 5f)
+                        val radius = 120.dp // Adjust the radius as needed
 
-                val x = cos(Math.toRadians(angle.toDouble())).toFloat() * radius.value
-                val y = sin(Math.toRadians(angle.toDouble())).toFloat() * radius.value
+                        val x = cos(Math.toRadians(angle.toDouble())).toFloat() * radius.value
+                        val y = sin(Math.toRadians(angle.toDouble())).toFloat() * radius.value
 
-                Box(
-                    modifier = Modifier
-                        .size(iconButtonSize)
-                        .offset { IntOffset(x.roundToInt(), y.roundToInt()) }
-                ) {
-                    val systemIcon = painterResource(getSystemIcon(i))
-                    Image(
-                        painter = systemIcon,
-                        contentDescription = "System Icon",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clickable(
-                                onClick = {
-                                    when (i) {
-                                        0 -> {
-                                            // Handle action for the first button (index 0)
-                                            // For example, open the settings activity
+                        if (i == 2) {  // If the current button is the volume icon
+                            volumeIconX = with(LocalDensity.current) { x.dp.toPx() }
+                            volumeIconY = with(LocalDensity.current) { y.dp.toPx() }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(iconButtonSize)
+                                .offset { IntOffset(x.roundToInt(), y.roundToInt()) }
+                        ) {
+                            val systemIcon = painterResource(getSystemIcon(i))
+                            Image(
+                                painter = systemIcon,
+                                contentDescription = "System Icon",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable(
+                                        onClick = {
+                                            when (i) {
+                                                0 -> openSettings(context)
+                                                1 -> {
+                                                    TODO()
+                                                }
+
+                                                2 -> {
+                                                    isVolumeSliderVisible = !isVolumeSliderVisible
+                                                }
+
+                                                3 -> {
+                                                    TODO()
+                                                }
+
+                                                4 -> {
+                                                    TODO()
+                                                }
+
+                                                else -> {
+                                                    TODO()
+                                                }
+                                            }
                                         }
+                                    ),
+                                contentScale = ContentScale.Fit // Adjust content scale as needed
+                            )
+                        }
 
-                                        1 -> {
-                                            // Handle action for the second button (index 1)
-                                            // For example, navigate to the home screen
-                                        }
+                    }
+                    if (isVolumeSliderVisible) {
+                        val additionalOffset = with(LocalDensity.current) { 100.dp.toPx() }
+                        val sliderPosX = toucherPosition.x + volumeIconX + additionalOffset
+                        val sliderPosY = toucherPosition.y + volumeIconY
+                        val volumeSliderPosition = toucherPosition.plus(
+                            Offset(
+                                volumeIconX + sliderAdditionalOffset,
+                                volumeIconY
+                            )
+                        )
 
-                                        2 -> {
-                                            // Handle action for the second button (index 1)
-                                            // For example, navigate to the home screen
-                                        }
-
-                                        3 -> {
-                                            // Handle action for the second button (index 1)
-                                            // For example, navigate to the home screen
-                                        }
-
-                                        4 -> {
-                                            // Handle action for the second button (index 1)
-                                            // For example, navigate to the home screen
-                                        }
-                                        // Handle other cases for other buttons
-                                        else -> {
-                                            // Handle the default case or add more cases as needed
-                                        }
-                                    }
+                        VolumeSlider(
+                            modifier = Modifier
+                                .offset {
+                                    IntOffset(
+                                        volumeSliderPosition.x.roundToInt(),
+                                        volumeSliderPosition.y.roundToInt()
+                                    )
                                 }
-                            ),
-                        contentScale = ContentScale.Fit // Adjust content scale as needed
-                    )
-                }
+                                .width(200.dp)
+                                .height(50.dp)
+                                .padding(16.dp),
+                            volumeValue = volumeValue,
+                            onValueChange = { value ->
+                                volumeValue = value
+                                // Here you can implement the code to change the system volume
+                            }
+                        )
+                    }
 
+                }
             }
         }
     }
 }
 
-
-
-
-
-//        Row(verticalAlignment = Alignment.Bottom) {
-//            Button(
-//                onClick = {
-//                    // Handle button click action here
-//                    isMenuVisible = true // Show the menu on button click
-//                },
-//                modifier = Modifier
-//                    .padding(8.dp)
-//                    .border(2.dp, Color.Red, CircleShape) // Add a 2dp red border around the button
-//            ) {
-//                Text("Button")
-//            }
-//        }
-//        // Popup menu
-//        if (isMenuVisible) {
-//            Box(
-//                modifier = Modifier
-//                    .fillMaxSize()
-//                    .background(Color.Black.copy(alpha = 0.5f))
-//                    .pointerInput(Unit) {
-//                        detectTapGestures {
-//                            isMenuVisible = false // Close the menu on outside tap
-//                        }
-//                    }
-//            ) {
-//                Box(
-//                    modifier = Modifier
-//                        .align(Alignment.TopEnd)
-//                        .padding(16.dp)
-//                ) {
-//                    Column {
-//                        Button(
-//                            onClick = {
-//                                // Handle menu option 1 action here
-//                                Toast.makeText(context, "Option 1 clicked!", Toast.LENGTH_SHORT).show()
-//                                isMenuVisible = false // Close the menu after clicking an option
-//                            }
-//                        ) {
-//                            Text("Option 1")
-//                        }
-//                        Spacer(modifier = Modifier.height(8.dp))
-//                        Button(
-//                            onClick = {
-//                                // Handle menu option 2 action here
-//                                Toast.makeText(context, "Option 2 clicked!", Toast.LENGTH_SHORT).show()
-//                                isMenuVisible = false // Close the menu after clicking an option
-//                            }
-//                        ) {
-//                            Text("Option 2")
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-
+@Composable
+fun VolumeSlider(
+    modifier: Modifier = Modifier,
+    volumeValue: Float,
+    onValueChange: (Float) -> Unit
+) {
+    Slider(
+        value = volumeValue,
+        onValueChange = onValueChange,
+        colors = SliderDefaults.colors(
+            thumbColor = Color.Red,
+            activeTrackColor = Color.Blue,
+            inactiveTrackColor = Color.Gray
+        ),
+        valueRange = 0f..1f
+    )
+}
 
 
 
