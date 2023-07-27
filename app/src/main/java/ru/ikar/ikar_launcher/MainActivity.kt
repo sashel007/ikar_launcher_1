@@ -422,6 +422,7 @@ fun launchApp(context: Context, app: ResolveInfo) {
 }
 
 @Composable
+
 fun FloatingToucher() {
     val context = LocalContext.current
     val basicButtonSize = 40.dp
