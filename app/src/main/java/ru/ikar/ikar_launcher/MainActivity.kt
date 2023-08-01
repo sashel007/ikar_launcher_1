@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.media.AudioManager
 import android.os.Bundle
 import android.provider.Settings
 import androidx.compose.foundation.gestures.*
@@ -48,7 +49,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -440,10 +440,8 @@ fun FloatingToucher() {
     var touchOffset by remember { mutableStateOf(Offset(0f, 0f)) }
     val buttonColors = Color(0xFF9B1E1E)
     var isVolumeSliderVisible by remember { mutableStateOf(false) }
-    var volumeValue by remember { mutableStateOf(0.5f) }
     var volumeIconX by remember { mutableStateOf(0f) }
     var volumeIconY by remember { mutableStateOf(0f) }
-    var sliderValue by remember { mutableStateOf(0f) }
     var sliderPosition by remember { mutableStateOf(0f) }
 
     fun getSystemIcon(index: Int): Int {
@@ -560,21 +558,30 @@ fun FloatingToucher() {
                                 contentScale = ContentScale.Fit // Adjust content scale as needed
                             )
                         }
-
                     }
                 }
             }
         }
         if (isVolumeSliderVisible) {
-
-            val sliderWidth = 24.dp
-            val sliderHeight = 240.dp
-            VolumeSlider(
-                modifier = Modifier.semantics { contentDescription = "Localized Description" },
-                value = sliderPosition,
-                onValueChange = { sliderPosition = it }
+            Box(modifier = Modifier
+                .border(2.dp,Color.Yellow)
+                .semantics { contentDescription = "Localized Description" }
+                .rotate(-90f)
+                .width(150.dp)
+                .align(Alignment.CenterEnd)
             )
-
+            {
+                VolumeSlider(
+                    value = sliderPosition,
+                    onValueChange = { newSliderPosition ->
+                        sliderPosition = newSliderPosition
+                        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                        val newVolume = (newSliderPosition * maxVolume).toInt()
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0)
+                    }
+                )
+            }
         }
     }
 }
@@ -586,7 +593,6 @@ fun VolumeSlider(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
-    /*@IntRange(from = 0)*/
     steps: Int = 0,
     onValueChangeFinished: (() -> Unit)? = null,
     colors: SliderColors = SliderDefaults.colors(),
