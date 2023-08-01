@@ -30,7 +30,9 @@ import androidx.core.graphics.drawable.toBitmap
 import android.util.Log
 import android.view.WindowManager
 import android.widget.CalendarView
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -40,14 +42,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderColors
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
@@ -104,7 +111,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             Box(modifier = Modifier.fillMaxSize()) {
                 Image(
-                    painter = painterResource(R.drawable.img),
+                    painter = painterResource(R.drawable.back),
                     contentDescription = "Background Image",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.FillBounds
@@ -354,7 +361,8 @@ fun CalendarAndClock() {
             CalendarWidget()
         }
         Spacer(modifier = Modifier.width(16.dp))
-        Box(modifier = Modifier.weight(1f)) {
+        Box(modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center) {
             ClockWidget()
         }
     }
@@ -410,7 +418,7 @@ fun ClockWidget() {
     }
     Text(
         text = currentTime.value,
-        style = TextStyle(fontSize = 16.sp)
+        style = TextStyle(fontSize = 40.sp)
     )
 }
 
@@ -422,7 +430,6 @@ fun launchApp(context: Context, app: ResolveInfo) {
 }
 
 @Composable
-
 fun FloatingToucher() {
     val context = LocalContext.current
     val basicButtonSize = 40.dp
@@ -436,10 +443,8 @@ fun FloatingToucher() {
     var volumeValue by remember { mutableStateOf(0.5f) }
     var volumeIconX by remember { mutableStateOf(0f) }
     var volumeIconY by remember { mutableStateOf(0f) }
-    val density = LocalDensity.current
-    val sliderAdditionalOffset = with(LocalDensity.current) { 100.dp.toPx() }
-
-
+    var sliderValue by remember { mutableStateOf(0f) }
+    var sliderPosition by remember { mutableStateOf(0f) }
 
     fun getSystemIcon(index: Int): Int {
         return when (index) {
@@ -457,7 +462,13 @@ fun FloatingToucher() {
         context.startActivity(settingsIntent)
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .border(
+                width = 10.dp,
+                color = Color.Green
+            )) {
         Box(
             modifier = Modifier
                 .size(basicButtonSize)
@@ -551,58 +562,41 @@ fun FloatingToucher() {
                         }
 
                     }
-                    if (isVolumeSliderVisible) {
-                        val additionalOffset = with(LocalDensity.current) { 100.dp.toPx() }
-                        val sliderPosX = toucherPosition.x + volumeIconX + additionalOffset
-                        val sliderPosY = toucherPosition.y + volumeIconY
-                        val volumeSliderPosition = toucherPosition.plus(
-                            Offset(
-                                volumeIconX + sliderAdditionalOffset,
-                                volumeIconY
-                            )
-                        )
-
-                        VolumeSlider(
-                            modifier = Modifier
-                                .offset {
-                                    IntOffset(
-                                        volumeSliderPosition.x.roundToInt(),
-                                        volumeSliderPosition.y.roundToInt()
-                                    )
-                                }
-                                .width(200.dp)
-                                .height(50.dp)
-                                .padding(16.dp),
-                            volumeValue = volumeValue,
-                            onValueChange = { value ->
-                                volumeValue = value
-                                // Here you can implement the code to change the system volume
-                            }
-                        )
-                    }
-
                 }
             }
+        }
+        if (isVolumeSliderVisible) {
+
+            val sliderWidth = 24.dp
+            val sliderHeight = 240.dp
+            VolumeSlider(
+                modifier = Modifier.semantics { contentDescription = "Localized Description" },
+                value = sliderPosition,
+                onValueChange = { sliderPosition = it }
+            )
+
         }
     }
 }
 
 @Composable
 fun VolumeSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
-    volumeValue: Float,
-    onValueChange: (Float) -> Unit
+    enabled: Boolean = true,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    /*@IntRange(from = 0)*/
+    steps: Int = 0,
+    onValueChangeFinished: (() -> Unit)? = null,
+    colors: SliderColors = SliderDefaults.colors(),
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
 ) {
     Slider(
-        value = volumeValue,
         onValueChange = onValueChange,
-        colors = SliderDefaults.colors(
-            thumbColor = Color.Red,
-            activeTrackColor = Color.Blue,
-            inactiveTrackColor = Color.Gray
-        ),
-        valueRange = 0f..1f
+        value = value
     )
+
 }
 
 
