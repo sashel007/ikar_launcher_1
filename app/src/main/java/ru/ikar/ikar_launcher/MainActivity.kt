@@ -6,6 +6,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.media.AudioManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.compose.foundation.gestures.*
@@ -60,6 +62,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -108,6 +112,8 @@ class MainActivity : ComponentActivity() {
         refreshInstalledApps() // Обновит список приложений, если пользователь перед этим скрыл
                                // какие-то приложения руками, перед тем как зайти в setContent
 
+        requestSystemAlertWindowPermission()
+
         setContent {
             Box(modifier = Modifier.fillMaxSize()) {
                 Image(
@@ -148,6 +154,23 @@ class MainActivity : ComponentActivity() {
         }
         return packageManager.queryIntentActivities(intent, 0)
     }
+
+    private fun requestSystemAlertWindowPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            // Request the permission
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            startActivityForResult(intent, PERMISSION_REQUEST_SYSTEM_ALERT_WINDOW)
+        }
+    }
+
+    companion object {
+        private const val PERMISSION_REQUEST_SYSTEM_ALERT_WINDOW = 1001
+    }
+
+
 
 
 
@@ -440,9 +463,11 @@ fun FloatingToucher() {
     var touchOffset by remember { mutableStateOf(Offset(0f, 0f)) }
     val buttonColors = Color(0xFF9B1E1E)
     var isVolumeSliderVisible by remember { mutableStateOf(false) }
+    var isBrightnessSliderVisible by remember { mutableStateOf(false) }
     var volumeIconX by remember { mutableStateOf(0f) }
     var volumeIconY by remember { mutableStateOf(0f) }
     var sliderPosition by remember { mutableStateOf(0f) }
+    var brightnessPosition by remember { mutableStateOf(0f) }
 
     fun getSystemIcon(index: Int): Int {
         return when (index) {
@@ -542,7 +567,8 @@ fun FloatingToucher() {
                                                 }
 
                                                 3 -> {
-                                                    TODO()
+                                                    isBrightnessSliderVisible =
+                                                        !isBrightnessSliderVisible
                                                 }
 
                                                 4 -> {
@@ -564,7 +590,7 @@ fun FloatingToucher() {
         }
         if (isVolumeSliderVisible) {
             Box(modifier = Modifier
-                .border(2.dp,Color.Yellow)
+                .border(2.dp, Color.Yellow)
                 .semantics { contentDescription = "Localized Description" }
                 .rotate(-90f)
                 .width(150.dp)
@@ -574,11 +600,52 @@ fun FloatingToucher() {
                 VolumeSlider(
                     value = sliderPosition,
                     onValueChange = { newSliderPosition ->
+                        //прикрутка громкости через аудиоменеджер
                         sliderPosition = newSliderPosition
                         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
                         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
                         val newVolume = (newSliderPosition * maxVolume).toInt()
                         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0)
+                    }
+                )
+            }
+        }
+
+        if (isBrightnessSliderVisible) {
+            context.startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS))
+            Box(modifier = Modifier
+                .border(2.dp, Color.Yellow)
+                .semantics { contentDescription = "Localized Description" }
+                .rotate(-90f)
+                .width(150.dp)
+                .align(Alignment.CenterEnd)
+            )
+            {
+                BrightnessSlider(
+                    value = brightnessPosition,
+                    onValueChange = { newBrightnessPosition ->
+                        //прикрутка яркости через Setting.SYSTEM
+                        brightnessPosition = newBrightnessPosition
+                        val contentResolver = context.contentResolver
+                        val brightnessMode = Settings.System.getInt(
+                            contentResolver,
+                            Settings.System.SCREEN_BRIGHTNESS_MODE
+                        )
+                        if (brightnessMode == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC) {
+                            // If the brightness mode is set to automatic, switch to manual mode
+                            Settings.System.putInt(
+                                contentResolver,
+                                Settings.System.SCREEN_BRIGHTNESS_MODE,
+                                Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL
+                            )
+                        }
+                        val maxBrightness = 255
+                        val newBrightness = (newBrightnessPosition * maxBrightness).toInt()
+                        Settings.System.putInt(
+                            contentResolver,
+                            Settings.System.SCREEN_BRIGHTNESS,
+                            newBrightness
+                        )
                     }
                 )
             }
@@ -602,7 +669,30 @@ fun VolumeSlider(
         onValueChange = onValueChange,
         value = value
     )
+}
 
+@Composable
+fun BrightnessSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    steps: Int = 0,
+    onValueChangeFinished: (() -> Unit)? = null,
+    colors: SliderColors = SliderDefaults.colors(),
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
+) {
+    Slider(
+        value = value,
+        onValueChange = onValueChange,
+        valueRange = valueRange,
+        steps = steps,
+        onValueChangeFinished = onValueChangeFinished,
+        colors = colors,
+        interactionSource = interactionSource,
+        modifier = modifier
+    )
 }
 
 
