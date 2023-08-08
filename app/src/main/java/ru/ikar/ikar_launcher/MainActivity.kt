@@ -62,8 +62,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -82,6 +80,7 @@ class MainActivity : ComponentActivity() {
     private var installedApps by mutableStateOf(emptyList<ResolveInfo>())
     private lateinit var windowManager: WindowManager
     private lateinit var layoutParams: WindowManager.LayoutParams
+    private var backgroundImageUri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -381,12 +380,39 @@ fun CalendarAndClock() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(modifier = Modifier.weight(1f)) {
-            CalendarWidget()
+            MediaScreen()
         }
         Spacer(modifier = Modifier.width(16.dp))
         Box(modifier = Modifier.weight(1f),
             contentAlignment = Alignment.Center) {
             ClockWidget()
+        }
+    }
+}
+
+@Composable
+fun MediaScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(250.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .padding(8.dp)
+            .background(color = Color.Black),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Button(onClick = { /*TODO*/ }) {
+
+            }
+            Button(onClick = { /*TODO*/ }) {
+
+            }
         }
     }
 }
@@ -572,7 +598,11 @@ fun FloatingToucher() {
                                                 }
 
                                                 4 -> {
-                                                    TODO()
+                                                    val intent = Intent(
+                                                        context,
+                                                        SelectBackgroundActivity::class.java
+                                                    )
+                                                    context.startActivity(intent)
                                                 }
 
                                                 else -> {
