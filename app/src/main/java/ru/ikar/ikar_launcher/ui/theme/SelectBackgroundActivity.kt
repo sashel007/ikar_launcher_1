@@ -1,4 +1,4 @@
-package ru.ikar.ikar_launcher
+package ru.ikar.ikar_launcher.ui.theme
 
 import android.app.Activity
 import android.content.Intent
@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import ru.ikar.ikar_launcher.R
 
 class SelectBackgroundActivity : ComponentActivity() {
 

@@ -3,9 +3,13 @@ package ru.ikar.ikar_launcher
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.media.AudioManager
+import android.media.tv.TvContract
+import android.media.tv.TvInputInfo
+import android.media.tv.TvInputManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -66,7 +70,9 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.delay
+import ru.ikar.ikar_launcher.ui.theme.SelectBackgroundActivity
 import java.text.SimpleDateFormat
+import java.util.ArrayList
 import java.util.Date
 import java.util.Locale
 import kotlin.math.cos
@@ -81,6 +87,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var windowManager: WindowManager
     private lateinit var layoutParams: WindowManager.LayoutParams
     private var backgroundImageUri: Uri? = null
+    val contractList: MutableList<Uri> = ArrayList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -127,7 +134,7 @@ class MainActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    CalendarAndClock()
+                    MediaAndClock(contractList)
                 }
                 AppLauncher(
                     installedApps = installedApps,
@@ -136,9 +143,22 @@ class MainActivity : ComponentActivity() {
                     hideApp = { app -> hideApp(context, app) }
                 )
                 FloatingToucher()
-//                FloatingPoint()
            }
         }
+
+        val tvInputManager = getSystemService(TV_INPUT_SERVICE) as TvInputManager
+        var contract: String? = null
+        for (tvInputInfo in tvInputManager.tvInputList) {
+            when (tvInputInfo.type) {
+                TvInputInfo.TYPE_HDMI -> {
+                    contract += TvContract.buildChannelUriForPassthroughInput(tvInputInfo.id).toString() + "\n"
+                    contractList.add(TvContract.buildChannelUriForPassthroughInput(tvInputInfo.id))
+                }
+                TvInputInfo.TYPE_DISPLAY_PORT -> Log.d("23", "TYPE_DISPLAY_PORT")
+                TvInputInfo.TYPE_TUNER -> Log.d("23", "TYPE_TUNER")
+            }
+        }
+        Log.d("123", "Intent action: ${intent.action}")
     }
 
     /*
@@ -372,7 +392,7 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
 }
 
 @Composable
-fun CalendarAndClock() {
+fun MediaAndClock(contractList: MutableList<Uri>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -380,7 +400,7 @@ fun CalendarAndClock() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(modifier = Modifier.weight(1f)) {
-            MediaScreen()
+            MediaScreen(contractList)
         }
         Spacer(modifier = Modifier.width(16.dp))
         Box(modifier = Modifier.weight(1f),
@@ -391,13 +411,16 @@ fun CalendarAndClock() {
 }
 
 @Composable
-fun MediaScreen() {
+fun MediaScreen(contractList: MutableList<Uri>) {
+
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(250.dp)
+            .width(700.dp)
+            .height(500.dp)
             .clip(RoundedCornerShape(16.dp))
-            .padding(8.dp)
+            .padding(25.dp)
             .background(color = Color.Black),
         contentAlignment = Alignment.BottomCenter
     ) {
@@ -407,10 +430,26 @@ fun MediaScreen() {
                 .padding(16.dp),
             horizontalArrangement = Arrangement.Center
         ) {
-            Button(onClick = { /*TODO*/ }) {
+            Button(onClick = {
+                val intent = Intent(Intent.ACTION_VIEW, contractList[0])
+                intent.addFlags(FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(Intent(Intent.ACTION_VIEW,contractList[0]))
+                Log.d("intent_INPUT", "Intent action: ${intent.action}")
+            }) {
 
             }
-            Button(onClick = { /*TODO*/ }) {
+            Button(onClick = {
+                val intent = Intent(Intent.ACTION_VIEW, contractList[1])
+                intent.addFlags(FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+            }) {
+
+            }
+            Button(onClick = {
+                val intent = Intent(Intent.ACTION_VIEW, contractList[2])
+                intent.addFlags(FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+            }) {
 
             }
         }
@@ -724,10 +763,6 @@ fun BrightnessSlider(
         modifier = modifier
     )
 }
-
-
-
-
 
 /*
  функция скрытия выбранного приложения из списка
