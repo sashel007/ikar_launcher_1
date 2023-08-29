@@ -39,10 +39,8 @@
         <activity
             android:name="ru.ikar.ikar_launcher.ui.theme.SelectBackgroundActivity"
             android:theme="@style/Theme.Ikar_launcher"
-            android:screenOrientation="landscape" />
-        <activity android:name=".HdmiActivity"
-            android:theme="@style/Theme.Ikar_launcher"
-            android:screenOrientation="landscape"/>
+            android:screenOrientation="landscape">
+        </activity>
     </application>
 
 </manifest>

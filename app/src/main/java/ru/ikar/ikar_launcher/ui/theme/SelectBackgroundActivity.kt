@@ -50,7 +50,7 @@ class SelectBackgroundActivity : ComponentActivity() {
             // Add more image resources as needed
         )
 
-        var selectedImageResId by remember { mutableStateOf<Int>(0) }
+        var selectedImageResId by remember { mutableStateOf(0) }
 
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -58,7 +58,7 @@ class SelectBackgroundActivity : ComponentActivity() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             LazyVerticalGrid(GridCells.Fixed(3)) {
-                itemsIndexed(backgroundImages) { index, imageResId ->
+                itemsIndexed(backgroundImages) { _, imageResId ->
                     val isSelected = selectedImageResId == imageResId
 
                     Image(
