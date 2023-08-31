@@ -23,9 +23,9 @@ fun HorizontalAppGrid(
     LazyRow {
         items(columns) { columnIndex ->
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp), // space between apps
+                verticalArrangement = Arrangement.spacedBy(6.dp), // space between apps
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(6.dp)
             ) {
                 for (rowIndex in 0 until rows) {
                     val appIndex = columnIndex * rows + rowIndex
