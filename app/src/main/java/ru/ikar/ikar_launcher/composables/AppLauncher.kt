@@ -2,6 +2,7 @@ package ru.ikar.ikar_launcher.composables
 
 import android.content.pm.ResolveInfo
 import android.view.ViewGroup
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -103,6 +105,7 @@ import androidx.compose.ui.unit.dp
 
 
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppLauncher(
     installedApps: List<ResolveInfo>,
@@ -113,6 +116,10 @@ fun AppLauncher(
     val context = LocalContext.current
     var isIconButtonClicked by remember { mutableStateOf(false) }
     var showButton by remember { mutableStateOf(true) }
+    val columns = 4
+    val cells = GridCells.Fixed(columns)
+    val pages = installedApps.chunked(6 * columns)
+    val pagerState = rememberPagerState(pageCount = { pages.size })
 
     Box(Modifier.fillMaxSize()) {
         if (showButton) {
@@ -142,34 +149,39 @@ fun AppLauncher(
             }
         }
 
-        val columns = 4
-        val cells = GridCells.Fixed(columns)
-
         if (showAllApps) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
-                    .background(Color.White.copy(alpha = 0.85f), shape = RoundedCornerShape(15.dp))
-                    .clip(RoundedCornerShape(20.dp))
-                    .pointerInput(Unit) {
-                        detectTapGestures { offset ->
-                            // Check if the tap is inside the grid area, if not, close the grid
-                            if (offset.y < 200.dp.toPx()) {
-                                onToggleAllApps()
-                                showButton = true
-                            }
-                        }
-                    }
-
-
-            ) {
+            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                val appsForPage = pages[page]
                 HorizontalAppGrid(
-                    installedApps = installedApps,
+                    installedApps = appsForPage,
                     context = context,
                     hideApp = hideApp
                 )
             }
+//            Box(
+//                modifier = Modifier
+//                    .align(Alignment.TopCenter)
+//                    .padding(horizontal = 16.dp, vertical = 16.dp)
+//                    .background(Color.White.copy(alpha = 0.85f), shape = RoundedCornerShape(15.dp))
+//                    .clip(RoundedCornerShape(20.dp))
+//                    .pointerInput(Unit) {
+//                        detectTapGestures { offset ->
+//                            // Check if the tap is inside the grid area, if not, close the grid
+//                            if (offset.y < 200.dp.toPx()) {
+//                                onToggleAllApps()
+//                                showButton = true
+//                            }
+//                        }
+//                    }
+//
+//
+//            ) {
+//                HorizontalAppGrid(
+//                    installedApps = installedApps,
+//                    context = context,
+//                    hideApp = hideApp
+//                )
+//            }
         }
     }
 }
