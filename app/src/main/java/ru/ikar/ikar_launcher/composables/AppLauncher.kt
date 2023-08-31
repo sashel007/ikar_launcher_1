@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import com.google.accompanist.pager.PagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -41,7 +42,6 @@ import ru.ikar.ikar_launcher.recyclerview.AppItemCompose
 import ru.ikar.ikar_launcher.recyclerview.AppListAdapter
 import ru.ikar.ikar_launcher.ui.theme.GridSpacingItemDecoration
 import androidx.compose.ui.unit.dp
-
 
 //@Composable
 //fun AppLauncher(
@@ -121,7 +121,42 @@ fun AppLauncher(
     val pages = installedApps.chunked(6 * columns)
     val pagerState = rememberPagerState(pageCount = { pages.size })
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier
+        .fillMaxSize()
+        .clip(RoundedCornerShape(12.dp))
+    ) {
+
+        if (showAllApps) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(12.dp))
+            ) { page ->
+                val appsForPage = pages[page]
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(12.dp))
+                ) {
+                    HorizontalAppGrid(
+                        installedApps = appsForPage,
+                        context = context,
+                        hideApp = hideApp,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+            }
+            HorizontalPageIndicator(
+                pagerState = pagerState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp),
+                activeColor = Color.White,
+                inactiveColor = Color.Black
+            )
+        }
+
         if (showButton) {
             //кнопка "Открыть приложения"
             IconButton(
@@ -149,15 +184,6 @@ fun AppLauncher(
             }
         }
 
-        if (showAllApps) {
-            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
-                val appsForPage = pages[page]
-                HorizontalAppGrid(
-                    installedApps = appsForPage,
-                    context = context,
-                    hideApp = hideApp
-                )
-            }
 //            Box(
 //                modifier = Modifier
 //                    .align(Alignment.TopCenter)
@@ -182,6 +208,6 @@ fun AppLauncher(
 //                    hideApp = hideApp
 //                )
 //            }
-        }
+
     }
 }
