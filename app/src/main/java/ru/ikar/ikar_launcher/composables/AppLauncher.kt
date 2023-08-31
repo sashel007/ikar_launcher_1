@@ -3,6 +3,9 @@ package ru.ikar.ikar_launcher.composables
 import android.content.pm.ResolveInfo
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -19,13 +22,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -43,10 +50,13 @@ fun AppLauncher(
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val backgroundPageColor = 0xF57777
     val backgroundTransparency = 0.95f
+    val coroutineScope = rememberCoroutineScope()
+    val thresholdPx = with(LocalDensity.current) { 25.dp.toPx() }
 
-    Box(Modifier
-        .fillMaxSize()
-        .clip(RoundedCornerShape(12.dp))
+    Box(
+        Modifier
+            .fillMaxSize()
+            .clip(RoundedCornerShape(12.dp))
     ) {
 
         if (showAllApps) {
@@ -56,6 +66,10 @@ fun AppLauncher(
                     .fillMaxSize()
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color(backgroundPageColor).copy(alpha = backgroundTransparency))
+                    .clickable {
+                        if (showAllApps) onToggleAllApps()
+                        showButton = true
+                    }
             ) { page ->
                 val appsForPage = pages[page]
                 Box(
@@ -71,6 +85,7 @@ fun AppLauncher(
                     )
                 }
             }
+
             HorizontalPageIndicator(
                 pagerState = pagerState,
                 modifier = Modifier
