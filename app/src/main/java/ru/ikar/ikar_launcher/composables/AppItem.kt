@@ -59,12 +59,12 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
 
     //Икона приложения с названием под ним + диалоговое окно при зажатии на приложении
     Column(
-        modifier = Modifier.padding(8.dp),
+        modifier = Modifier.padding(1.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
-                .size(35.dp)
+                .size(50.dp)
                 .pointerInput(Unit) {
                     /*
                     одно нажатие на аппку = открыть приложение;
@@ -80,7 +80,7 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
             Image(
                 bitmap = appIcon,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.size(70.dp)
             )
             if (isPopupVisible) {
                 Dialog(
@@ -118,7 +118,7 @@ fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveI
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
-            color = Color(android.graphics.Color.rgb(72, 3,111)),
+            color = Color(android.graphics.Color.WHITE),
             modifier = Modifier.padding(top = 4.dp).width(80.dp)
         )
     }

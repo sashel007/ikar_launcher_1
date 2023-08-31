@@ -29,7 +29,6 @@ fun HorizontalAppGrid(
 
     Box(
         modifier = modifier
-            .background(Color.Gray.copy(alpha = 0.5f))
             .clip(RoundedCornerShape(12.dp)),
         contentAlignment = Alignment.Center
     ) {
