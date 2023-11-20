@@ -42,12 +42,11 @@ class SelectBackgroundActivity : ComponentActivity() {
 
     @Composable
     fun SelectBackgroundScreen() {
-        // Sample list of background images (you can replace it with your actual images)
+        // Список изображений
         val backgroundImages = listOf(
             R.drawable.back_2,
             R.drawable.back_3,
             R.drawable.back_4,
-            // Add more image resources as needed
         )
 
         var selectedImageResId by remember { mutableStateOf(0) }
@@ -68,7 +67,6 @@ class SelectBackgroundActivity : ComponentActivity() {
                             .size(120.dp)
                             .padding(8.dp)
                             .clickable {
-                                // Set the selected image resource ID
                                 selectedImageResId = imageResId
                             }
                             .border(
@@ -82,16 +80,11 @@ class SelectBackgroundActivity : ComponentActivity() {
 
             Button(
                 onClick = {
-                    // Show the confirmation dialog here, you can use AlertDialog or a custom DialogFragment
-                    // and handle the button clicks accordingly to set the selected image as the background
-                    // or do nothing.
-                    // For simplicity, let's just print the selected image resource ID here.
                     if (selectedImageResId != null) {
                         val resultIntent = Intent()
                         val selectedImageUri = Uri.parse("android.resource://$packageName/${selectedImageResId!!}")
                         resultIntent.data = selectedImageUri
 
-                        // Set the result and finish the activity
                         setResult(Activity.RESULT_OK, resultIntent)
                         finish()
                     } else {
