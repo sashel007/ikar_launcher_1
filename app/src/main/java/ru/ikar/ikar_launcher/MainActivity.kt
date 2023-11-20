@@ -97,6 +97,7 @@ class MainActivity : ComponentActivity() {
                     hideApp = { app -> hideApp(context, app) }
                 )
                 FloatingToucher()
+
            }
         }
 
