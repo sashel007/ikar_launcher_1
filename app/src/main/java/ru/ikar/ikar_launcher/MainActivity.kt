@@ -54,6 +54,7 @@ class MainActivity : ComponentActivity() {
         }
         packageManager = applicationContext.packageManager
 
+
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
