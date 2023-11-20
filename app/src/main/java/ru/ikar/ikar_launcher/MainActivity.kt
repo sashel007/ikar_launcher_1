@@ -5,84 +5,116 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.media.tv.TvContract
+import android.media.tv.TvInputInfo
+import android.media.tv.TvInputManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import androidx.compose.foundation.gestures.*
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
 import android.util.Log
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.ripple.rememberRipple
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
+import android.view.WindowManager
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.window.Dialog
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import ru.ikar.ikar_launcher.composables.AppLauncher
+import ru.ikar.ikar_launcher.composables.FloatingToucher
+import ru.ikar.ikar_launcher.composables.MediaAndClock
+import java.util.ArrayList
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var packageManager: PackageManager
     private var showAllApps by mutableStateOf(false)
     private var installedApps by mutableStateOf(emptyList<ResolveInfo>())
-
+    private lateinit var windowManager: WindowManager
+    private lateinit var layoutParams: WindowManager.LayoutParams
+    private val contractList: MutableList<Uri> = ArrayList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        //скрыл аппбар и навигейшн бар
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).let { controller ->
             controller.hide(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars())
-            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
         packageManager = applicationContext.packageManager
 
-        refreshInstalledApps() // Обновит список приложений, если пользователь перед этим скрыл
-                                // какие-то приложения руками, перед тем как зайти в setContent
 
+        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        layoutParams = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT
+        ).apply {
+            type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            format = android.graphics.PixelFormat.TRANSPARENT
+            width = 56
+            height = 56
+            x = 0
+            y = 0
+        }
+
+        refreshInstalledApps() // Обновит список приложений, если пользователь перед этим скрыл
+                               // какие-то приложения руками, перед тем как зайти в setContent
+
+        requestSystemAlertWindowPermission()
 
         setContent {
             Box(modifier = Modifier.fillMaxSize()) {
                 Image(
-                    painter = painterResource(R.drawable.img),
+                    painter = painterResource(R.drawable.back),
                     contentDescription = "Background Image",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.FillBounds
                 )
-
                 val context = LocalContext.current
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    MediaAndClock(contractList)
+                }
                 AppLauncher(
                     installedApps = installedApps,
                     showAllApps = showAllApps,
                     onToggleAllApps = { showAllApps = !showAllApps },
                     hideApp = { app -> hideApp(context, app) }
                 )
-            }
+                FloatingToucher()
+           }
         }
 
+        //вернуть при тестировании на панели
+
+//        val tvInputManager = getSystemService(TV_INPUT_SERVICE) as TvInputManager
+//        var contract: String? = null
+//        for (tvInputInfo in tvInputManager.tvInputList) {
+//            when (tvInputInfo.type) {
+//                TvInputInfo.TYPE_HDMI -> {
+//                    contract += TvContract.buildChannelUriForPassthroughInput(tvInputInfo.id).toString() + "\n"
+//                    contractList.add(TvContract.buildChannelUriForPassthroughInput(tvInputInfo.id))
+//                }
+//                TvInputInfo.TYPE_DISPLAY_PORT -> Log.d("23", "TYPE_DISPLAY_PORT")
+//                TvInputInfo.TYPE_TUNER -> Log.d("23", "TYPE_TUNER")
+//            }
+//        }
+//        Log.d("123", "Intent action: ${intent.action}")
     }
 
     /*
@@ -98,36 +130,28 @@ class MainActivity : ComponentActivity() {
         return packageManager.queryIntentActivities(intent, 0)
     }
 
+    private fun requestSystemAlertWindowPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            // Request the permission
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            startActivityForResult(intent, PERMISSION_REQUEST_SYSTEM_ALERT_WINDOW)
+        }
+    }
 
-
-//    @Suppress("DEPRECATION")
-//    private fun getInstalledApps(packageManager: PackageManager): List<ResolveInfo> {
-//        val intent = Intent(Intent.ACTION_MAIN, null).apply {
-//            addCategory(Intent.CATEGORY_LAUNCHER)
-//        }
-//        val resolveInfoList: List<ResolveInfo> = packageManager.queryIntentActivities(
-//            intent,
-//            PackageManager.MATCH_DEFAULT_ONLY
-//        )
-//        return resolveInfoList
-//
-//        //фильтруем только установленные аппки
-////        return resolveInfoList.filter { resolveInfo ->
-////            val flags = PackageManager.MATCH_UNINSTALLED_PACKAGES
-////            val appInfo = packageManager.getApplicationInfo(
-////                resolveInfo.activityInfo.packageName,
-////                flags
-////            )
-////            appInfo.flags and ApplicationInfo.FLAG_SYSTEM == 0
-////        }
-//    }
+    companion object {
+        private const val PERMISSION_REQUEST_SYSTEM_ALERT_WINDOW = 1001
+    }
 
     //обновляет список приложений с учетом того, что пользователь мог скрыть какие-то из списка
+//    не работает!!!
     private fun refreshInstalledApps() {
         installedApps = getInstalledApps(packageManager)
     }
 
-    fun hideApp(context: Context, app: ResolveInfo) {
+    private fun hideApp(context: Context, app: ResolveInfo) {
         val packageName = app.activityInfo.packageName
         val componentName = ComponentName(packageName, app.activityInfo.name)
         packageManager.setComponentEnabledSetting(
@@ -142,168 +166,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-//стартовове вью с кнопкой и скрытым списком/
-@Composable
-fun AppLauncher(
-    installedApps: List<ResolveInfo>,
-    showAllApps: Boolean,
-    onToggleAllApps: () -> Unit,
-    hideApp: (ResolveInfo) -> Unit
-) {
-    val context = LocalContext.current
-    val columns = 4
-    val cells = GridCells.Fixed(columns)
-
-    var isIconButtonClicked by remember { mutableStateOf(false) }
-
-    Box(Modifier.fillMaxSize()) {
-
-        if (isIconButtonClicked) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Gray.copy(alpha = 0.5f))
-            )
-        }
-        //кнопка "Открыть приложения"
-        IconButton(
-            onClick = { onToggleAllApps() },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
-                .size(30.dp)
-                .clickable(
-                    onClick = {
-                        onToggleAllApps
-                        isIconButtonClicked = !isIconButtonClicked
-                    },
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = rememberRipple(bounded = false, color = Color.Gray)
-                ),
-            enabled = true,
-            colors = IconButtonDefaults.filledIconButtonColors(
-                contentColor = Color.Magenta, // Change the icon color here
-                disabledContentColor = Color.Gray
-            )
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Menu,
-                contentDescription = "App Drawer Icon",
-                tint = Color.White
-            )
-        }
-
-        if (showAllApps) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
-                    .padding(bottom = 45.dp)
-                    .background(Color.Gray.copy(alpha = 0.3f))
-            ) {
-                LazyVerticalGrid(cells) {
-                    items(installedApps.size) { index ->
-                        val app = installedApps[index]
-                        AppItem(app, context.packageManager, hideApp)
-                    }
-                }
-            }
-        }
-    }
-}
-
-//отрисовка приложений внутри списка приложений
-@Composable
-fun AppItem(app: ResolveInfo, packageManager: PackageManager, hideApp: (ResolveInfo) -> Unit) {
-    val context = LocalContext.current
-    val appName = app.loadLabel(packageManager).toString()
-    val appIcon = app.loadIcon(packageManager).toBitmap().asImageBitmap()
-    val popupWidth = 200.dp
-    val popupHeight = 100.dp
-
-    /*
-    запоминалка состояний при сворачивании списка через функцию
-    рекомпозиции mutableStateOf()
-     */
-
-    var isPopupVisible by remember { mutableStateOf(false) }
-
-    //Икона приложения с названием под ним + диалоговое окно при зажатии на приложении
-    Column(
-        modifier = Modifier.padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ){
-        Box(
-            modifier = Modifier
-                .size(35.dp)
-                .pointerInput(Unit) {
-                    /*
-                    одно нажатие на аппку = открыть приложение;
-                    зажать палец на аппке = открыть диалоговое окно
-                    с предложением скрыть приложения из списка
-                     */
-                    detectTapGestures(
-                        onTap = { launchApp(context, app) },
-                        onLongPress = { isPopupVisible = true }
-                    )
-                }
-        ) {
-            Image(
-                bitmap = appIcon,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize()
-            )
-            if (isPopupVisible) {
-                Dialog(
-                    onDismissRequest = { isPopupVisible = false },
-                    content = {
-                        Column(
-                            modifier = Modifier
-                                .width(popupWidth)
-                                .height(popupHeight)
-                                .background(Color.White)
-                                .padding(16.dp)
-                        ) {
-                            Text(
-                                text = "Скрыть приложение?",
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = { hideApp(app)
-                                    isPopupVisible = false
-                                          },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(text = "Да ")
-                            }
-                        }
-                    })
-            }
-
-        }
-        Text(
-            text = appName,
-            textAlign = TextAlign.Center,
-            color = Color.White,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-    }
-}
-
-//функция запуска приложений внутри развернутого списка
-fun launchApp(context: Context, app: ResolveInfo) {
-    val packageName = app.activityInfo.packageName
-    val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
-    context.startActivity(launchIntent)
-}
 
 /*
  функция скрытия выбранного приложения из списка
  ___(В ДОРАБОТКЕ, пока на уровне логов)
  */
-
-
-
-
