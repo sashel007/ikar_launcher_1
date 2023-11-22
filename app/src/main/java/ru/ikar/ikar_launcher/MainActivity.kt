@@ -3,35 +3,33 @@ package ru.ikar.ikar_launcher
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
-import android.media.tv.TvContract
-import android.media.tv.TvInputInfo
-import android.media.tv.TvInputManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import android.util.Log
-import android.view.WindowManager
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import ru.ikar.ikar_launcher.composables.AppLauncher
-import ru.ikar.ikar_launcher.composables.FloatingToucher
-import ru.ikar.ikar_launcher.composables.MediaAndClock
-import java.util.ArrayList
+import ru.ikar.ikar_launcher.composables.AppDrawer
+import ru.ikar.ikar_launcher.composables.MainScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -41,9 +39,12 @@ class MainActivity : ComponentActivity() {
     private lateinit var windowManager: WindowManager
     private lateinit var layoutParams: WindowManager.LayoutParams
     private val contractList: MutableList<Uri> = ArrayList()
+    private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        sharedPreferences = getSharedPreferences("app_package_names", Context.MODE_PRIVATE)
 
         //скрыл аппбар и навигейшн бар
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -54,11 +55,9 @@ class MainActivity : ComponentActivity() {
         }
         packageManager = applicationContext.packageManager
 
-
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         layoutParams = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT
+            WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT
         ).apply {
             type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
@@ -70,35 +69,39 @@ class MainActivity : ComponentActivity() {
         }
 
         refreshInstalledApps() // Обновит список приложений, если пользователь перед этим скрыл
-                               // какие-то приложения руками, перед тем как зайти в setContent
+        // какие-то приложения руками, перед тем как зайти в setContent
 
         requestSystemAlertWindowPermission()
 
         setContent {
+            val context = LocalContext.current
+
             Box(modifier = Modifier.fillMaxSize()) {
-                Image(
-                    painter = painterResource(R.drawable.back),
-                    contentDescription = "Background Image",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.FillBounds
-                )
-                val context = LocalContext.current
+//                Image(
+//                    painter = painterResource(R.drawable.back),
+//                    contentDescription = "Background Image",
+//                    modifier = Modifier.fillMaxSize(),
+//                    contentScale = ContentScale.FillBounds
+//                )
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    MediaAndClock(contractList)
+                    MainScreen(contractList, sharedPreferences)
                 }
-                AppLauncher(
+                AppDrawer(
                     installedApps = installedApps,
                     showAllApps = showAllApps,
                     onToggleAllApps = { showAllApps = !showAllApps },
-                    hideApp = { app -> hideApp(context, app) }
+                    hideApp = { app -> hideApp(context, app) },
+                    sharedPreferences = sharedPreferences
                 )
-                FloatingToucher()
+//                FloatingToucher()
 
-           }
+
+            }
+
         }
 
         //вернуть при тестировании на панели
@@ -135,8 +138,7 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
             // Request the permission
             val intent = Intent(
-                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:$packageName")
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")
             )
             startActivityForResult(intent, PERMISSION_REQUEST_SYSTEM_ALERT_WINDOW)
         }

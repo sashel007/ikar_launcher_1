@@ -1,5 +1,6 @@
 package ru.ikar.ikar_launcher.composables
 
+import android.content.SharedPreferences
 import android.content.pm.ResolveInfo
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -32,11 +33,12 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AppLauncher(
+fun AppDrawer(
     installedApps: List<ResolveInfo>,
     showAllApps: Boolean,
     onToggleAllApps: () -> Unit,
-    hideApp: (ResolveInfo) -> Unit
+    hideApp: (ResolveInfo) -> Unit,
+    sharedPreferences: SharedPreferences
 ) {
     val context = LocalContext.current
     var isIconButtonClicked by remember { mutableStateOf(false) }
@@ -46,6 +48,7 @@ fun AppLauncher(
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val backgroundPageColor = 0xF57777
     val backgroundTransparency = 0.95f
+//    val dataStorage = LocalContext.current.dataStore
 
     Box(
         Modifier
@@ -79,7 +82,8 @@ fun AppLauncher(
                         installedApps = appsForPage,
                         context = context,
                         hideApp = hideApp,
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
+                        sharedPreferences = sharedPreferences
                     )
                 }
             }
